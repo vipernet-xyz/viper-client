@@ -10,6 +10,7 @@ services:
       - DATABASE_URL=postgres://postgres:password@db:5432/viperdb?sslmode=disable
     volumes:
       - .:/app
+      - ./migrations:/app/migrations
 
   db:
     image: postgres:14

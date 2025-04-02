@@ -16,6 +16,7 @@ This project provides a backend service for managing decentralized RPC (Remote P
    ├── models/                  # Data models for users, apps, chain configuration, rpc_endpoints
    ├── middleware/              # Middleware for logging, rate limiting, error handling, etc.
    └── utils/                   # Utility functions, configuration loaders, etc.
+/migrations                     # Database migration files
 ```
 
 ## Getting Started
@@ -48,6 +49,12 @@ The easiest way to run the application is with Docker Compose, which sets up bot
 docker compose up
 ```
 
+Alternatively, you can use the Makefile:
+
+```
+make docker-run
+```
+
 Any changes you make to the Go code will automatically trigger a rebuild and restart of the application thanks to Air.
 
 #### Running Locally
@@ -59,25 +66,46 @@ export DATABASE_URL=postgres://postgres:password@localhost:5432/viperdb?sslmode=
 go run cmd/server/main.go
 ```
 
+Or use the Makefile:
+
+```
+make run
+```
+
+## Database Migrations
+
+The application uses [golang-migrate](https://github.com/golang-migrate/migrate) for managing database schema. Migrations are located in the `/migrations` directory and are automatically run when the application starts.
+
 ## Testing
 
 Run unit tests with:
 
 ```
-go test ./...
+make test-unit
 ```
 
-Run integration tests (with Docker):
+Run integration tests (requires a running PostgreSQL instance):
 
 ```
-# Start the environment if not already running
-docker compose up -d
+make test-integration
+```
 
-# Run integration tests
-docker exec -e RUN_INTEGRATION_TESTS=true viper-client-app-1 go test -tags=integration -v ./...
+Run all tests (unit and integration):
 
-# Run integration tests for a specific package
-docker exec -e RUN_INTEGRATION_TESTS=true viper-client-app-1 go test -tags=integration -v ./internal/db
+```
+make test
+```
+
+Run migration tests specifically:
+
+```
+make test-migrations
+```
+
+Run integration tests with Docker (starts a PostgreSQL container automatically):
+
+```
+make docker-test-integration
 ```
 
 ## License
