@@ -61,10 +61,23 @@ go run cmd/server/main.go
 
 ## Testing
 
-Run tests with:
+Run unit tests with:
 
 ```
 go test ./...
+```
+
+Run integration tests (with Docker):
+
+```
+# Start the environment if not already running
+docker compose up -d
+
+# Run integration tests
+docker exec -e RUN_INTEGRATION_TESTS=true viper-client-app-1 go test -tags=integration -v ./...
+
+# Run integration tests for a specific package
+docker exec -e RUN_INTEGRATION_TESTS=true viper-client-app-1 go test -tags=integration -v ./internal/db
 ```
 
 ## License
