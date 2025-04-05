@@ -94,7 +94,7 @@ func (s *Service) CreateApp(req CreateAppRequest) (*CreateAppResponse, error) {
 	app.Name = req.Name
 	app.Description = req.Description
 	app.AllowedOrigins = req.AllowedOrigins
-	app.AllowedChains = req.AllowedChains
+	app.AllowedChains = models.IntArray(req.AllowedChains)
 	app.APIKeyHash = apiKeyHash
 	app.RateLimit = rateLimit
 
@@ -105,7 +105,7 @@ func (s *Service) CreateApp(req CreateAppRequest) (*CreateAppResponse, error) {
 		app.Name,
 		app.Description,
 		pq.Array(app.AllowedOrigins),
-		pq.Array(app.AllowedChains),
+		app.AllowedChains,
 		app.APIKeyHash,
 		app.RateLimit,
 	).Scan(&app.ID, &app.CreatedAt, &app.UpdatedAt)
@@ -144,7 +144,7 @@ func (s *Service) GetApp(id int) (*models.App, error) {
 		&app.Name,
 		&description,
 		pq.Array(&app.AllowedOrigins),
-		pq.Array(&app.AllowedChains),
+		&app.AllowedChains,
 		&app.APIKeyHash,
 		&app.RateLimit,
 		&app.CreatedAt,
@@ -193,7 +193,7 @@ func (s *Service) GetAppsByUserID(userID int) ([]models.App, error) {
 			&app.Name,
 			&description,
 			pq.Array(&app.AllowedOrigins),
-			pq.Array(&app.AllowedChains),
+			&app.AllowedChains,
 			&app.APIKeyHash,
 			&app.RateLimit,
 			&app.CreatedAt,
@@ -256,7 +256,7 @@ func (s *Service) UpdateApp(id int, userID int, req UpdateAppRequest) (*models.A
 
 	allowedChains := app.AllowedChains
 	if req.AllowedChains != nil {
-		allowedChains = req.AllowedChains
+		allowedChains = models.IntArray(req.AllowedChains)
 	}
 
 	rateLimit := app.RateLimit
@@ -282,7 +282,7 @@ func (s *Service) UpdateApp(id int, userID int, req UpdateAppRequest) (*models.A
 		name,
 		description,
 		pq.Array(allowedOrigins),
-		pq.Array(allowedChains),
+		allowedChains,
 		rateLimit,
 		id,
 		userID,
@@ -293,7 +293,7 @@ func (s *Service) UpdateApp(id int, userID int, req UpdateAppRequest) (*models.A
 		&updatedApp.Name,
 		&dbDescription,
 		pq.Array(&updatedApp.AllowedOrigins),
-		pq.Array(&updatedApp.AllowedChains),
+		&updatedApp.AllowedChains,
 		&updatedApp.APIKeyHash,
 		&updatedApp.RateLimit,
 		&updatedApp.CreatedAt,

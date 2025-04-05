@@ -42,6 +42,21 @@ func (h *RPCHandler) RegisterRoutes(router *gin.Engine) {
 }
 
 // handleRPCRequestByChainID handles a JSON-RPC request for a specific blockchain using chain ID
+// @Summary Process RPC request by chain ID
+// @Description Forwards a JSON-RPC request to the appropriate blockchain node using chain ID
+// @Tags RPC
+// @Accept json
+// @Produce json
+// @Param chain_id path int true "Blockchain Chain ID"
+// @Param X-App-ID header string true "Application Identifier"
+// @Param X-API-Key header string true "API Key"
+// @Param request body JsonRpcRequest true "JSON-RPC Request"
+// @Success 200 {object} JsonRpcResponse "JSON-RPC Response"
+// @Failure 400 {object} ErrorResponse "Bad request"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Security APIKey
+// @Router /rpc/{chain_id} [post]
 func (h *RPCHandler) handleRPCRequestByChainID(c *gin.Context) {
 	// Get chain ID from URL
 	chainIDStr := c.Param("chain_id")
@@ -104,6 +119,23 @@ func (h *RPCHandler) handleRPCRequestByChainID(c *gin.Context) {
 }
 
 // handleRPCRequest handles a JSON-RPC request using app identifier and network name
+// @Summary Process RPC request by app identifier and network
+// @Description Forwards a JSON-RPC request to the appropriate blockchain node using app identifier and network name
+// @Tags RPC
+// @Accept json
+// @Produce json
+// @Param identifier path string true "Application Identifier"
+// @Param network path string true "Network Identifier/Name"
+// @Param X-API-Key header string false "API Key (can also be provided as a query parameter)"
+// @Param apiKey query string false "API Key (alternative to header)"
+// @Param request body JsonRpcRequest true "JSON-RPC Request"
+// @Success 200 {object} JsonRpcResponse "JSON-RPC Response"
+// @Failure 400 {object} ErrorResponse "Bad request"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Failure 503 {object} ErrorResponse "Service unavailable"
+// @Security APIKey
+// @Router /api/rpc/{identifier}/{network} [post]
 func (h *RPCHandler) handleRPCRequest(c *gin.Context) {
 	// Get app identifier and network from URL
 	appIdentifier := c.Param("identifier")

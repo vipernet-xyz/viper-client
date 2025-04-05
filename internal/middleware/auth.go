@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/dhruvsharma/viper-client/internal/auth"
@@ -38,8 +39,15 @@ func AuthMiddleware(authService *auth.Service) gin.HandlerFunc {
 			return
 		}
 
+		// Convert the user ID from string to integer
+		userID, err := strconv.Atoi(claims.UserID)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID in token"})
+			return
+		}
+
 		// Set the user info in the context
-		c.Set("user_id", claims.UserID)
+		c.Set("user_id", userID)
 		c.Set("provider_user_id", claims.ProviderUserID)
 		c.Set("email", claims.Email)
 		c.Set("name", claims.Name)
@@ -76,8 +84,15 @@ func Web3AuthMiddleware(authService *auth.Service) gin.HandlerFunc {
 			return
 		}
 
+		// Convert the user ID from string to integer
+		userID, err := strconv.Atoi(claims.UserID)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID in token"})
+			return
+		}
+
 		// Set the user info in the context
-		c.Set("user_id", claims.UserID)
+		c.Set("user_id", userID)
 		c.Set("provider_user_id", claims.ProviderUserID)
 		c.Set("email", claims.Email)
 		c.Set("name", claims.Name)

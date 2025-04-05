@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/dhruvsharma/viper-client/internal/api"
 	"github.com/dhruvsharma/viper-client/internal/apps"
@@ -12,24 +14,36 @@ import (
 	"github.com/dhruvsharma/viper-client/internal/rpc"
 	"github.com/dhruvsharma/viper-client/internal/utils"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 func main() {
 	// Load configuration
 	config := utils.LoadConfig()
 
+	// Initialize logger
+	isDevelopment := os.Getenv("ENV") != "production"
+	logger, err := middleware.NewZapLogger(isDevelopment)
+	if err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
+	defer logger.Sync()
+
 	// Connect to the database
 	database, err := db.New(config.DatabaseURL)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		logger.Fatal("Failed to connect to database",
+			zap.Error(err),
+			zap.String("database_url", config.DatabaseURL))
 	}
 	defer database.Close()
 
 	// Run migrations
 	if err := database.MigrateDB(""); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
+		logger.Fatal("Failed to run migrations",
+			zap.Error(err))
 	}
-	log.Println("Database migrations completed successfully")
+	logger.Info("Database migrations completed successfully")
 
 	// Initialize auth service
 	authService := auth.NewAuthService(auth.Config{
@@ -44,15 +58,47 @@ func main() {
 	endpointManager := rpc.NewDBEndpointManager(database.DB)
 	rpcDispatcher := rpc.NewDispatcher(endpointManager)
 
-	// Initialize Gin router
-	router := gin.Default()
+	// Configure default rate limits (requests per second and burst capacity)
+	defaultRateLimit := 30
+	defaultBurstCapacity := 60
+
+	// Check for custom rate limit settings
+	if rateStr := os.Getenv("DEFAULT_RATE_LIMIT"); rateStr != "" {
+		if rate, err := strconv.Atoi(rateStr); err == nil && rate > 0 {
+			defaultRateLimit = rate
+		}
+	}
+	if burstStr := os.Getenv("DEFAULT_BURST_CAPACITY"); burstStr != "" {
+		if burst, err := strconv.Atoi(burstStr); err == nil && burst > 0 {
+			defaultBurstCapacity = burst
+		}
+	}
+
+	// Initialize Gin router with logger middleware
+	router := gin.New()
+
+	// Apply global middleware
+	router.Use(gin.Recovery())
+	router.Use(middleware.Logger(logger))
+	router.Use(middleware.IPRateLimiter(defaultRateLimit, defaultBurstCapacity))
+
+	// Setup Swagger
+	api.SetupSwagger(router)
 
 	// Public routes
+	// @Summary Health check endpoint
+	// @Description Check if the service is running and connected to the database
+	// @Tags Health
+	// @Accept json
+	// @Produce json
+	// @Success 200 {object} api.HealthResponse "Service is healthy"
+	// @Failure 503 {object} api.ErrorResponse "Service is unhealthy"
+	// @Router /health [get]
 	router.GET("/health", func(c *gin.Context) {
 		// Test database connection
 		err := database.Ping()
 		if err != nil {
-			log.Printf("Database ping failed: %v", err)
+			logger.Error("Database ping failed", zap.Error(err))
 			c.JSON(http.StatusServiceUnavailable, gin.H{
 				"status":  "error",
 				"message": "Service is unhealthy: database connection failed",
@@ -80,9 +126,18 @@ func main() {
 
 	// Initialize and register apps handler
 	appsHandler := api.NewAppsHandler(appsService)
-	appsHandler.RegisterRoutes(router)
+	appsHandler.RegisterRoutes(apiGroup)
 
 	// Sample protected endpoint
+	// @Summary Get user profile
+	// @Description Retrieves the authenticated user's profile information
+	// @Tags Authentication
+	// @Accept json
+	// @Produce json
+	// @Success 200 {object} api.UserProfile "User profile information"
+	// @Failure 401 {object} api.ErrorResponse "Unauthorized"
+	// @Security BearerAuth
+	// @Router /api/profile [get]
 	apiGroup.GET("/profile", func(c *gin.Context) {
 		userID := c.GetString("user_id")
 		email := c.GetString("email")
@@ -99,8 +154,8 @@ func main() {
 	})
 
 	// Start server
-	log.Printf("Server starting on port %s", config.Port)
+	logger.Info("Server starting", zap.String("port", config.Port))
 	if err := router.Run(":" + config.Port); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		logger.Fatal("Failed to start server", zap.Error(err))
 	}
 }

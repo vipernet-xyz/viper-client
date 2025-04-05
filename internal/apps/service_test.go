@@ -193,7 +193,7 @@ func TestUpdateApp(t *testing.T) {
 			Name:           req.Name,
 			Description:    req.Description,
 			AllowedOrigins: req.AllowedOrigins,
-			AllowedChains:  req.AllowedChains,
+			AllowedChains:  models.IntArray(req.AllowedChains),
 			APIKeyHash:     "key-hash",
 			RateLimit:      req.RateLimit,
 			CreatedAt:      now,
@@ -219,7 +219,7 @@ func TestUpdateApp(t *testing.T) {
 	assert.Equal(t, "New Name", updatedApp.Name)
 	assert.Equal(t, "New Description", updatedApp.Description)
 	assert.Equal(t, []string{"example.com"}, updatedApp.AllowedOrigins)
-	assert.Equal(t, []int{1, 2}, updatedApp.AllowedChains)
+	assert.Equal(t, models.IntArray{1, 2}, updatedApp.AllowedChains)
 	assert.Equal(t, 15000, updatedApp.RateLimit)
 }
 

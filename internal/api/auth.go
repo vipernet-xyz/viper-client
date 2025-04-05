@@ -40,6 +40,16 @@ func NewAuthHandler(database *db.DB, authService *auth.Service) *AuthHandler {
 }
 
 // LoginOrRegister handles login or registration based on provider user ID
+// @Summary Login or register a user
+// @Description Authenticates a user with their provider ID (Web3Auth) or creates a new account if the user doesn't exist
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body SwaggerLoginRequest true "Login/Register Data"
+// @Success 200 {object} SwaggerAuthResponse "Successfully authenticated"
+// @Failure 400 {object} ErrorResponse "Bad request"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /auth/login [post]
 func (h *AuthHandler) LoginOrRegister(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

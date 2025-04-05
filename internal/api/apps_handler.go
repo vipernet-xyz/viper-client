@@ -8,6 +8,41 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// CreateAppRequest represents the request to create a new app
+// @Description Request data for creating a new application
+type CreateAppRequest struct {
+	// Application name
+	// @example "My Blockchain App"
+	Name string `json:"name" binding:"required"`
+
+	// Application description
+	// @example "A decentralized exchange app"
+	Description string `json:"description"`
+
+	// List of allowed origins for CORS
+	// @example ["https://myapp.com", "https://dev.myapp.com"]
+	AllowedOrigins []string `json:"allowed_origins"`
+
+	// List of allowed blockchain chain IDs
+	// @example [1, 137, 56]
+	AllowedChains []int `json:"allowed_chains" binding:"required"`
+}
+
+// CreateAppResponse represents the response for app creation
+// @Description Response data after creating a new application
+type CreateAppResponse struct {
+	// The created application object
+	App interface{} `json:"app"`
+
+	// Generated API key (only shown once)
+	// @example "vpr_12345abcdef67890"
+	APIKey string `json:"api_key"`
+
+	// Success message
+	// @example "App created successfully. Keep your API key safe, as it won't be shown again."
+	Message string `json:"message"`
+}
+
 // AppsHandler handles app-related API requests
 type AppsHandler struct {
 	appsService *apps.Service
@@ -21,18 +56,28 @@ func NewAppsHandler(appsService *apps.Service) *AppsHandler {
 }
 
 // RegisterRoutes registers the app-related routes
-func (h *AppsHandler) RegisterRoutes(router *gin.Engine) {
-	appRoutes := router.Group("/api/apps")
-
+func (h *AppsHandler) RegisterRoutes(router *gin.RouterGroup) {
 	// Routes require authentication
-	appRoutes.POST("/", h.createApp)
-	appRoutes.GET("/:id", h.getApp)
-	appRoutes.GET("/", h.getUserApps)
-	appRoutes.PUT("/:id", h.updateApp)
-	appRoutes.DELETE("/:id", h.deleteApp)
+	router.POST("/apps/", h.createApp)
+	router.GET("/apps/:id", h.getApp)
+	router.GET("/apps/", h.getUserApps)
+	router.PUT("/apps/:id", h.updateApp)
+	router.DELETE("/apps/:id", h.deleteApp)
 }
 
 // createApp handles the creation of a new app
+// @Summary Create a new application
+// @Description Creates a new application for the authenticated user
+// @Tags Apps
+// @Accept json
+// @Produce json
+// @Param request body SwaggerCreateAppRequest true "Application Details"
+// @Success 201 {object} SwaggerCreateAppResponse "Application created successfully"
+// @Failure 400 {object} ErrorResponse "Bad request"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Security BearerAuth
+// @Router /api/apps/ [post]
 func (h *AppsHandler) createApp(c *gin.Context) {
 	// Get user ID from the authenticated context
 	userID := c.GetInt("user_id")
@@ -81,6 +126,19 @@ func (h *AppsHandler) createApp(c *gin.Context) {
 }
 
 // getApp retrieves an app by ID
+// @Summary Get an application by ID
+// @Description Retrieves a specific application by its ID
+// @Tags Apps
+// @Accept json
+// @Produce json
+// @Param id path int true "Application ID"
+// @Success 200 {object} AppResponse "Application details"
+// @Failure 400 {object} ErrorResponse "Bad request"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden"
+// @Failure 404 {object} ErrorResponse "Not found"
+// @Security BearerAuth
+// @Router /api/apps/{id} [get]
 func (h *AppsHandler) getApp(c *gin.Context) {
 	// Get user ID from the authenticated context
 	userID := c.GetInt("user_id")
@@ -123,6 +181,16 @@ func (h *AppsHandler) getApp(c *gin.Context) {
 }
 
 // getUserApps retrieves all apps belonging to the authenticated user
+// @Summary Get all applications for a user
+// @Description Retrieves all applications owned by the authenticated user
+// @Tags Apps
+// @Accept json
+// @Produce json
+// @Success 200 {object} AppsResponse "List of applications"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Security BearerAuth
+// @Router /api/apps/ [get]
 func (h *AppsHandler) getUserApps(c *gin.Context) {
 	// Get user ID from the authenticated context
 	userID := c.GetInt("user_id")
@@ -147,6 +215,21 @@ func (h *AppsHandler) getUserApps(c *gin.Context) {
 }
 
 // updateApp updates an app by ID
+// @Summary Update an application
+// @Description Updates an existing application by its ID
+// @Tags Apps
+// @Accept json
+// @Produce json
+// @Param id path int true "Application ID"
+// @Param request body UpdateAppRequest true "Update Data"
+// @Success 200 {object} UpdateAppResponse "Updated application"
+// @Failure 400 {object} ErrorResponse "Bad request"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden"
+// @Failure 404 {object} ErrorResponse "Not found"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Security BearerAuth
+// @Router /api/apps/{id} [put]
 func (h *AppsHandler) updateApp(c *gin.Context) {
 	// Get user ID from the authenticated context
 	userID := c.GetInt("user_id")
@@ -202,6 +285,20 @@ func (h *AppsHandler) updateApp(c *gin.Context) {
 }
 
 // deleteApp deletes an app by ID
+// @Summary Delete an application
+// @Description Deletes an application by its ID
+// @Tags Apps
+// @Accept json
+// @Produce json
+// @Param id path int true "Application ID"
+// @Success 200 {object} DeleteAppResponse "Success message"
+// @Failure 400 {object} ErrorResponse "Bad request"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden"
+// @Failure 404 {object} ErrorResponse "Not found"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Security BearerAuth
+// @Router /api/apps/{id} [delete]
 func (h *AppsHandler) deleteApp(c *gin.Context) {
 	// Get user ID from the authenticated context
 	userID := c.GetInt("user_id")

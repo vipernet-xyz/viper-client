@@ -1,0 +1,955 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "A decentralized RPC provider backend with JWT authentication and request routing.",
+    "title": "Viper Client API",
+    "termsOfService": "http://example.com/terms/",
+    "contact": {
+      "name": "API Support",
+      "url": "http://example.com/support",
+      "email": "support@example.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "version": "1.0"
+  },
+  "host": "localhost:8080",
+  "basePath": "/",
+  "paths": {
+    "/api/apps": {
+      "get": {
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "Retrieves all applications owned by the authenticated user",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Apps"
+        ],
+        "summary": "Get all applications for a user",
+        "responses": {
+          "200": {
+            "description": "List of applications",
+            "schema": {
+              "$ref": "#/definitions/api.AppsResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "Creates a new application for the authenticated user",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Apps"
+        ],
+        "summary": "Create a new application",
+        "parameters": [
+          {
+            "description": "Application Details",
+            "name": "request",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/api.SwaggerCreateAppRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Application created successfully",
+            "schema": {
+              "$ref": "#/definitions/api.SwaggerCreateAppResponse"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/apps/{id}": {
+      "get": {
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "Retrieves a specific application by its ID",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Apps"
+        ],
+        "summary": "Get an application by ID",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "Application ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Application details",
+            "schema": {
+              "$ref": "#/definitions/api.AppResponse"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      },
+      "put": {
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "Updates an existing application by its ID",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Apps"
+        ],
+        "summary": "Update an application",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "Application ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "description": "Update Data",
+            "name": "request",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/api.UpdateAppRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated application",
+            "schema": {
+              "$ref": "#/definitions/api.UpdateAppResponse"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      },
+      "delete": {
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "Deletes an application by its ID",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Apps"
+        ],
+        "summary": "Delete an application",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "Application ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success message",
+            "schema": {
+              "$ref": "#/definitions/api.DeleteAppResponse"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/profile": {
+      "get": {
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "Retrieves the authenticated user's profile information",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Get user profile",
+        "responses": {
+          "200": {
+            "description": "User profile information",
+            "schema": {
+              "$ref": "#/definitions/api.UserProfile"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/rpc/{identifier}/{network}": {
+      "post": {
+        "security": [
+          {
+            "APIKey": []
+          }
+        ],
+        "description": "Forwards a JSON-RPC request to the appropriate blockchain node using app identifier and network name",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "RPC"
+        ],
+        "summary": "Process RPC request by app identifier and network",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Application Identifier",
+            "name": "identifier",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Network Identifier/Name",
+            "name": "network",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "API Key (can also be provided as a query parameter)",
+            "name": "X-API-Key",
+            "in": "header"
+          },
+          {
+            "type": "string",
+            "description": "API Key (alternative to header)",
+            "name": "apiKey",
+            "in": "query"
+          },
+          {
+            "description": "JSON-RPC Request",
+            "name": "request",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/api.JsonRpcRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON-RPC Response",
+            "schema": {
+              "$ref": "#/definitions/api.JsonRpcResponse"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "description": "Authenticates a user with their provider ID (Web3Auth) or creates a new account if the user doesn't exist",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Login or register a user",
+        "parameters": [
+          {
+            "description": "Login/Register Data",
+            "name": "request",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/api.SwaggerLoginRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully authenticated",
+            "schema": {
+              "$ref": "#/definitions/api.SwaggerAuthResponse"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "description": "Check if the service is running and connected to the database",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health check endpoint",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "schema": {
+              "$ref": "#/definitions/api.HealthResponse"
+            }
+          },
+          "503": {
+            "description": "Service is unhealthy",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/rpc/{chain_id}": {
+      "post": {
+        "security": [
+          {
+            "APIKey": []
+          }
+        ],
+        "description": "Forwards a JSON-RPC request to the appropriate blockchain node using chain ID",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "RPC"
+        ],
+        "summary": "Process RPC request by chain ID",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "Blockchain Chain ID",
+            "name": "chain_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Application Identifier",
+            "name": "X-App-ID",
+            "in": "header",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "API Key",
+            "name": "X-API-Key",
+            "in": "header",
+            "required": true
+          },
+          {
+            "description": "JSON-RPC Request",
+            "name": "request",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/api.JsonRpcRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON-RPC Response",
+            "schema": {
+              "$ref": "#/definitions/api.JsonRpcResponse"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "api.AppResponse": {
+      "type": "object",
+      "description": "Standard application response",
+      "properties": {
+        "app": {
+          "description": "The application object",
+          "type": "object"
+        }
+      }
+    },
+    "api.AppsResponse": {
+      "type": "object",
+      "description": "Response containing multiple applications",
+      "properties": {
+        "apps": {
+          "description": "List of applications",
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "api.DeleteAppResponse": {
+      "type": "object",
+      "description": "Response data after deleting an application",
+      "properties": {
+        "message": {
+          "type": "string",
+          "description": "Success message",
+          "example": "App deleted successfully"
+        }
+      }
+    },
+    "api.ErrorResponse": {
+      "type": "object",
+      "description": "Standard error response",
+      "properties": {
+        "error": {
+          "type": "string",
+          "description": "Error message",
+          "example": "Invalid request parameters"
+        }
+      }
+    },
+    "api.HealthResponse": {
+      "type": "object",
+      "description": "Health check response",
+      "properties": {
+        "message": {
+          "type": "string",
+          "description": "A message providing more details about the health status",
+          "example": "Service is healthy and connected to database"
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the service",
+          "example": "success"
+        }
+      }
+    },
+    "api.JsonRpcError": {
+      "type": "object",
+      "description": "JSON-RPC 2.0 error object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "description": "Error code",
+          "example": -32700
+        },
+        "data": {
+          "description": "Additional error data",
+          "type": "object"
+        },
+        "message": {
+          "type": "string",
+          "description": "Error message",
+          "example": "Parse error"
+        }
+      }
+    },
+    "api.JsonRpcRequest": {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "method"
+      ],
+      "description": "Standard JSON-RPC 2.0 request",
+      "properties": {
+        "id": {
+          "description": "Request ID",
+          "example": 1
+        },
+        "jsonrpc": {
+          "type": "string",
+          "description": "JSON-RPC version (must be \"2.0\")",
+          "example": "2.0"
+        },
+        "method": {
+          "type": "string",
+          "description": "Method to call",
+          "example": "eth_blockNumber"
+        },
+        "params": {
+          "description": "Parameters for the method",
+          "example": [
+            10,
+            {
+              "from": "0x..."
+            }
+          ]
+        }
+      }
+    },
+    "api.JsonRpcResponse": {
+      "type": "object",
+      "description": "Standard JSON-RPC 2.0 response",
+      "properties": {
+        "error": {
+          "description": "Error information (if unsuccessful)",
+          "$ref": "#/definitions/api.JsonRpcError"
+        },
+        "id": {
+          "description": "Request ID (same as in the request)",
+          "example": 1
+        },
+        "jsonrpc": {
+          "type": "string",
+          "description": "JSON-RPC version (always \"2.0\")",
+          "example": "2.0"
+        },
+        "result": {
+          "description": "Result of the call (if successful)",
+          "type": "object"
+        }
+      }
+    },
+    "api.SwaggerAuthResponse": {
+      "type": "object",
+      "description": "Authentication response with JWT token and user data",
+      "properties": {
+        "token": {
+          "type": "string",
+          "description": "JWT token for authentication",
+          "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        },
+        "user": {
+          "description": "User information",
+          "type": "object"
+        }
+      }
+    },
+    "api.SwaggerCreateAppRequest": {
+      "type": "object",
+      "required": [
+        "name",
+        "allowed_chains"
+      ],
+      "description": "Request data for creating a new application",
+      "properties": {
+        "allowed_chains": {
+          "type": "array",
+          "description": "List of allowed blockchain chain IDs",
+          "items": {
+            "type": "integer"
+          },
+          "example": [
+            1,
+            137,
+            56
+          ]
+        },
+        "allowed_origins": {
+          "type": "array",
+          "description": "List of allowed origins for CORS",
+          "items": {
+            "type": "string"
+          },
+          "example": [
+            "https://myapp.com",
+            "https://dev.myapp.com"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "description": "Application description",
+          "example": "A decentralized exchange app"
+        },
+        "name": {
+          "type": "string",
+          "description": "Application name",
+          "example": "My Blockchain App"
+        }
+      }
+    },
+    "api.SwaggerCreateAppResponse": {
+      "type": "object",
+      "description": "Response data after creating a new application",
+      "properties": {
+        "api_key": {
+          "type": "string",
+          "description": "Generated API key (only shown once)",
+          "example": "vpr_12345abcdef67890"
+        },
+        "app": {
+          "description": "The created application object",
+          "type": "object"
+        },
+        "message": {
+          "type": "string",
+          "description": "Success message",
+          "example": "App created successfully. Keep your API key safe, as it won't be shown again."
+        }
+      }
+    },
+    "api.SwaggerLoginRequest": {
+      "type": "object",
+      "required": [
+        "provider_user_id"
+      ],
+      "description": "Login or register request data",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "User's email address",
+          "example": "user@example.com"
+        },
+        "name": {
+          "type": "string",
+          "description": "User's display name",
+          "example": "John Doe"
+        },
+        "provider_user_id": {
+          "type": "string",
+          "description": "The provider's unique user ID",
+          "example": "web3auth_1234567890"
+        }
+      }
+    },
+    "api.UpdateAppRequest": {
+      "type": "object",
+      "description": "Request data for updating an application",
+      "properties": {
+        "allowed_chains": {
+          "type": "array",
+          "description": "List of allowed blockchain chain IDs",
+          "items": {
+            "type": "integer"
+          },
+          "example": [
+            1,
+            137,
+            42161
+          ]
+        },
+        "allowed_origins": {
+          "type": "array",
+          "description": "List of allowed origins for CORS",
+          "items": {
+            "type": "string"
+          },
+          "example": [
+            "https://updated-app.com"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "description": "Application description",
+          "example": "An updated description"
+        },
+        "name": {
+          "type": "string",
+          "description": "Application name",
+          "example": "Updated App Name"
+        }
+      }
+    },
+    "api.UpdateAppResponse": {
+      "type": "object",
+      "description": "Response data after updating an application",
+      "properties": {
+        "app": {
+          "description": "The updated application object",
+          "type": "object"
+        },
+        "message": {
+          "type": "string",
+          "description": "Success message",
+          "example": "App updated successfully"
+        }
+      }
+    },
+    "api.UserInfo": {
+      "type": "object",
+      "description": "Basic user information",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "User email",
+          "example": "user@example.com"
+        },
+        "id": {
+          "type": "string",
+          "description": "User ID",
+          "example": "123"
+        },
+        "name": {
+          "type": "string",
+          "description": "User name",
+          "example": "John Doe"
+        }
+      }
+    },
+    "api.UserProfile": {
+      "type": "object",
+      "description": "User profile information",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "The status of the response",
+          "example": "success"
+        },
+        "user": {
+          "description": "User information",
+          "$ref": "#/definitions/api.UserInfo"
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "APIKey": {
+      "type": "apiKey",
+      "name": "X-API-Key",
+      "in": "header",
+      "description": "API key for RPC endpoints."
+    },
+    "BearerAuth": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "description": "Type \"Bearer\" followed by a space and the JWT token."
+    }
+  },
+  "tags": [
+    {
+      "description": "User authentication endpoints",
+      "name": "Authentication"
+    },
+    {
+      "description": "Application management endpoints",
+      "name": "Apps"
+    },
+    {
+      "description": "RPC forwarding endpoints",
+      "name": "RPC"
+    },
+    {
+      "description": "Health check endpoint",
+      "name": "Health"
+    }
+  ]
+} 

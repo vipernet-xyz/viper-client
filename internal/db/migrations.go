@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -13,8 +15,34 @@ import (
 // MigrateDB runs database migrations
 func (db *DB) MigrateDB(migrationsPath string) error {
 	if migrationsPath == "" {
-		migrationsPath = "file://migrations"
+		// Try to get the current working directory
+		wd, err := os.Getwd()
+		if err == nil {
+			// First check if we're in the project root
+			if _, err := os.Stat(filepath.Join(wd, "migrations")); err == nil {
+				migrationsPath = "file://" + filepath.Join(wd, "migrations")
+			} else {
+				// We might be in a subdirectory, try to find migrations relative to working dir
+				rootPath := wd
+				for i := 0; i < 3; i++ { // Try going up max 3 levels
+					rootPath = filepath.Dir(rootPath)
+					if _, err := os.Stat(filepath.Join(rootPath, "migrations")); err == nil {
+						migrationsPath = "file://" + filepath.Join(rootPath, "migrations")
+						break
+					}
+				}
+
+				// If we still haven't found it, fall back to default
+				if migrationsPath == "" {
+					migrationsPath = "file://migrations"
+				}
+			}
+		} else {
+			migrationsPath = "file://migrations"
+		}
 	}
+
+	log.Printf("Using migrations path: %s", migrationsPath)
 
 	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
 	if err != nil {
@@ -43,8 +71,31 @@ func (db *DB) MigrateDB(migrationsPath string) error {
 // DropDB drops all database tables (for testing)
 func (db *DB) DropDB(migrationsPath string) error {
 	if migrationsPath == "" {
-		migrationsPath = "file://migrations"
+		// Use the same logic as MigrateDB
+		wd, err := os.Getwd()
+		if err == nil {
+			if _, err := os.Stat(filepath.Join(wd, "migrations")); err == nil {
+				migrationsPath = "file://" + filepath.Join(wd, "migrations")
+			} else {
+				rootPath := wd
+				for i := 0; i < 3; i++ {
+					rootPath = filepath.Dir(rootPath)
+					if _, err := os.Stat(filepath.Join(rootPath, "migrations")); err == nil {
+						migrationsPath = "file://" + filepath.Join(rootPath, "migrations")
+						break
+					}
+				}
+
+				if migrationsPath == "" {
+					migrationsPath = "file://migrations"
+				}
+			}
+		} else {
+			migrationsPath = "file://migrations"
+		}
 	}
+
+	log.Printf("Using migrations path for drop: %s", migrationsPath)
 
 	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
 	if err != nil {

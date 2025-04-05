@@ -76,6 +76,36 @@ make run
 
 The application uses [golang-migrate](https://github.com/golang-migrate/migrate) for managing database schema. Migrations are located in the `/migrations` directory and are automatically run when the application starts.
 
+## Rate Limiting
+
+The application implements token bucket rate limiting to protect against abuse and ensure fair usage. Two types of rate limiting are available:
+
+### IP-Based Rate Limiting
+
+By default, all API requests are rate-limited by client IP address to provide basic protection against abuse. The default limits are:
+
+- 30 requests per second
+- 60 request burst capacity
+
+### App-Based Rate Limiting
+
+For RPC endpoints, additional rate limiting is applied based on the application ID provided in the `X-App-ID` header. Each app can have its own rate limit configured during app creation or update.
+
+### Configuration
+
+Rate limits can be configured using environment variables:
+
+```
+# Global rate limiting (applied to all requests)
+export DEFAULT_RATE_LIMIT=30       # Requests per second
+export DEFAULT_BURST_CAPACITY=60   # Maximum burst capacity
+
+# Start the server with custom rate limits
+go run cmd/server/main.go
+```
+
+Rate limits can also be adjusted on a per-app basis through the app management API.
+
 ## Testing
 
 Run unit tests with:
@@ -110,4 +140,4 @@ make docker-test-integration
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) 
