@@ -8,7 +8,6 @@ import (
 
 	"github.com/dhruvsharma/viper-client/internal/api"
 	"github.com/dhruvsharma/viper-client/internal/apps"
-	"github.com/dhruvsharma/viper-client/internal/auth"
 	"github.com/dhruvsharma/viper-client/internal/db"
 	"github.com/dhruvsharma/viper-client/internal/middleware"
 	"github.com/dhruvsharma/viper-client/internal/rpc"
@@ -44,12 +43,6 @@ func main() {
 			zap.Error(err))
 	}
 	logger.Info("Database migrations completed successfully")
-
-	// Initialize auth service
-	authService := auth.NewAuthService(auth.Config{
-		SecretKey:     config.JWTSecretKey,
-		TokenDuration: config.GetJWTDuration(),
-	})
 
 	// Initialize apps service
 	appsService := apps.NewService(database.DB)
@@ -113,16 +106,16 @@ func main() {
 	})
 
 	// Initialize and register handlers
-	authHandler := api.NewAuthHandler(database, authService)
+	authHandler := api.NewAuthHandler(database)
 	authHandler.RegisterRoutes(router)
 
 	// Initialize and register RPC handler
 	rpcHandler := api.NewRPCHandler(rpcDispatcher, appsService, database)
 	rpcHandler.RegisterRoutes(router)
 
-	// API routes - protected by JWT authentication
+	// API routes - protected by Auto Authentication middleware
 	apiGroup := router.Group("/api")
-	apiGroup.Use(middleware.AuthMiddleware(authService))
+	apiGroup.Use(middleware.AutoAuthMiddleware(database))
 
 	// Initialize and register apps handler
 	appsHandler := api.NewAppsHandler(appsService)

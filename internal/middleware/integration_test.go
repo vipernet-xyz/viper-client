@@ -4,13 +4,17 @@
 package middleware
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/dhruvsharma/viper-client/internal/auth"
+	"github.com/dhruvsharma/viper-client/internal/db"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
@@ -149,4 +153,77 @@ func TestRateLimitingIntegration(t *testing.T) {
 	req4.RemoteAddr = "10.0.0.1:12345"
 	router.ServeHTTP(w4, req4)
 	assert.Equal(t, http.StatusOK, w4.Code, "Request after waiting should succeed")
+}
+
+func TestAutoAuthMiddlewareIntegration(t *testing.T) {
+	// Skip if short tests, as this requires a database
+	if testing.Short() {
+		t.Skip("Skipping integration test")
+	}
+
+	// Setup
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+
+	// Database connection
+	database, err := db.New("postgresql://postgres:postgres@localhost:5432/viper_test?sslmode=disable")
+	if err != nil {
+		t.Fatalf("Failed to connect to test database: %v", err)
+	}
+	defer database.Close()
+
+	// Run migrations
+	if err := database.MigrateDB(""); err != nil {
+		t.Fatalf("Failed to run migrations: %v", err)
+	}
+
+	// Auth service
+	authService := auth.NewAuthService(auth.Config{
+		SecretKey:     "test-secret",
+		TokenDuration: time.Hour,
+	})
+
+	// Create test payload
+	payload := map[string]interface{}{
+		"email": "integration-test@example.com",
+		"name":  "Integration Test User",
+	}
+
+	// Encode token
+	jsonPayload, _ := json.Marshal(payload)
+	base64Payload := base64.StdEncoding.EncodeToString(jsonPayload)
+	base64Payload = strings.ReplaceAll(base64Payload, "+", "-")
+	base64Payload = strings.ReplaceAll(base64Payload, "/", "_")
+	base64Payload = strings.TrimRight(base64Payload, "=")
+	mockToken := "header." + base64Payload + ".signature"
+
+	// Create test route with middleware
+	router.GET("/protected", AutoAuthMiddleware(authService, database), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+			"email": c.GetString("email"),
+		})
+	})
+
+	// First request should create a user
+	req1, _ := http.NewRequest("GET", "/protected", nil)
+	req1.Header.Set("Authorization", "Bearer "+mockToken)
+	resp1 := httptest.NewRecorder()
+	router.ServeHTTP(resp1, req1)
+
+	// Check response
+	if resp1.Code != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", resp1.Code)
+	}
+
+	// Second request should find the same user
+	req2, _ := http.NewRequest("GET", "/protected", nil)
+	req2.Header.Set("Authorization", "Bearer "+mockToken)
+	resp2 := httptest.NewRecorder()
+	router.ServeHTTP(resp2, req2)
+
+	// Check response
+	if resp2.Code != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", resp2.Code)
+	}
 }

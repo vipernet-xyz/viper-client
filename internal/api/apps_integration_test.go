@@ -4,9 +4,12 @@
 package api
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -68,15 +71,9 @@ func setupTestEnv(t *testing.T) (*gin.Engine, *db.DB, *auth.Service, int) {
 
 	// Generate a token for the test user - we don't use this token but it's kept for reference
 	// in case we need to add Authorization header tests later
-	_, err = authService.GenerateToken(
-		strconv.Itoa(user.ID),
-		user.ProviderUserID,
-		user.Email,
-		user.Name,
-	)
-	if err != nil {
-		t.Fatalf("Failed to generate token: %v", err)
-	}
+	testToken := generateTestToken(user.Email, user.Name)
+	
+	_ = testToken // Using assignment to avoid unused variable warning
 
 	// Add middleware to set user info for testing
 	router.Use(func(c *gin.Context) {
@@ -109,4 +106,25 @@ func TestAppsIntegration(t *testing.T) {
 	t.Skip("Skipping app integration test until proper mocking is implemented")
 
 	// The rest of the test will be implemented later with proper mocking
+}
+
+// Helper to generate a token for the test
+func generateTestToken(email, name string) string {
+	// Create payload
+	payload := map[string]interface{}{
+		"email": email,
+		"name":  name,
+	}
+	
+	// Encode the payload
+	jsonPayload, _ := json.Marshal(payload)
+	base64Payload := base64.StdEncoding.EncodeToString(jsonPayload)
+	// Replace standard base64 chars with URL-safe chars
+	base64Payload = strings.ReplaceAll(base64Payload, "+", "-")
+	base64Payload = strings.ReplaceAll(base64Payload, "/", "_")
+	// Remove padding
+	base64Payload = strings.TrimRight(base64Payload, "=")
+	
+	// Create a mock token
+	return "header." + base64Payload + ".signature"
 }

@@ -112,3 +112,29 @@ func (db *DB) UpdateUser(id int, email, name string) (*models.User, error) {
 
 	return &user, nil
 }
+
+// GetUserByEmail retrieves a user by email
+func (db *DB) GetUserByEmail(email string) (*models.User, error) {
+	var user models.User
+	err := db.QueryRow(`
+		SELECT id, provider_user_id, email, name, created_at, updated_at
+		FROM users
+		WHERE email = $1
+	`, email).Scan(
+		&user.ID,
+		&user.ProviderUserID,
+		&user.Email,
+		&user.Name,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}

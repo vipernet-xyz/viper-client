@@ -22,33 +22,6 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
-// SwaggerLoginRequest represents the login request body for documentation
-// @Description Login or register request data
-type SwaggerLoginRequest struct {
-	// The provider's unique user ID
-	// @example "web3auth_1234567890"
-	ProviderUserID string `json:"provider_user_id" binding:"required"`
-
-	// User's email address
-	// @example "user@example.com"
-	Email string `json:"email"`
-
-	// User's display name
-	// @example "John Doe"
-	Name string `json:"name"`
-}
-
-// SwaggerAuthResponse represents the response for auth operations
-// @Description Authentication response with JWT token and user data
-type SwaggerAuthResponse struct {
-	// JWT token for authentication
-	// @example "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-	Token string `json:"token"`
-
-	// User information
-	User interface{} `json:"user"`
-}
-
 // UserProfile represents a user profile
 // @Description User profile information
 type UserProfile struct {

@@ -3,7 +3,7 @@ package docs
 
 // @title           Viper Client API
 // @version         1.0
-// @description     A decentralized RPC provider backend with JWT authentication and request routing.
+// @description     A decentralized RPC provider backend with token-based authentication and request routing.
 // @termsOfService  http://example.com/terms/
 
 // @contact.name   API Support
@@ -19,7 +19,7 @@ package docs
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
-// @description Type "Bearer" followed by a space and the JWT token.
+// @description Type "Bearer" followed by a space and the token. The token must contain a base64-encoded email in its second part.
 
 // @securityDefinitions.apikey APIKey
 // @in header
