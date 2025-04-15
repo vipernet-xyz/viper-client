@@ -1,8 +1,0 @@
-services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    volumes:
-      - ./go.mod:/app/go.mod
-      - ./go.sum:/app/go.sum 

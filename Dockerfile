@@ -1,4 +1,4 @@
-FROM golang:1.22-alpine
+FROM golang:1.24.2-alpine3.21
 
 # Install Git and other dependencies
 RUN apk add --no-cache git

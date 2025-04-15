@@ -13,6 +13,7 @@ import (
 	"github.com/dhruvsharma/viper-client/internal/rpc"
 	"github.com/dhruvsharma/viper-client/internal/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-contrib/cors"
 	"go.uber.org/zap"
 )
 
@@ -68,7 +69,14 @@ func main() {
 	}
 
 	// Initialize Gin router with logger middleware
-	router := gin.New()
+	router := gin.Default()
+
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"https://app.vipernet.xyz", "http://localhost:5173"},
+		AllowMethods:     []string{"GET", "POST", "OPTIONS", "PUT"},
+		AllowHeaders:     []string{"Content-Type", "Authorization", "X-Cosmos-Address", "X-Cosmos-Signature"},
+		AllowCredentials: true,
+	}))
 
 	// Apply global middleware
 	router.Use(gin.Recovery())
