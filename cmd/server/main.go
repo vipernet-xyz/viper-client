@@ -69,7 +69,7 @@ func main() {
 	}
 
 	// Initialize Gin router with logger middleware
-	router := gin.Default()
+	router := gin.New()
 
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"https://app.vipernet.xyz", "http://localhost:5173"},
