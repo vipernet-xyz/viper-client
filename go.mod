@@ -1,6 +1,12 @@
 module github.com/dhruvsharma/viper-client
 
+<<<<<<< Updated upstream
 go 1.24.2
+=======
+go 1.23.0
+
+toolchain go1.23.8
+>>>>>>> Stashed changes
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
@@ -39,6 +45,7 @@ require (
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
+<<<<<<< Updated upstream
 	golang.org/x/arch v0.15.0 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/net v0.38.0 // indirect
@@ -46,5 +53,13 @@ require (
 	golang.org/x/text v0.23.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+=======
+	golang.org/x/arch v0.8.0 // indirect
+	golang.org/x/crypto v0.37.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
+	golang.org/x/sys v0.32.0 // indirect
+	golang.org/x/text v0.24.0 // indirect
+	google.golang.org/protobuf v1.34.2 // indirect
+>>>>>>> Stashed changes
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

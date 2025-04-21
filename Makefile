@@ -1,4 +1,4 @@
-.PHONY: all build test test-unit test-integration run clean
+.PHONY: all build test test-unit test-integration run clean setup-viper-network run-example run-with-viper-network run-relay-example
 
 all: build
 
@@ -32,4 +32,24 @@ docker-test-integration:
 
 clean:
 	rm -rf bin/
-	rm -f server 
+	rm -f server
+
+# Setup viper-network connection
+setup-viper-network:
+	@echo "Setting up viper-network connection..."
+	go run scripts/setup_viper_network.go
+
+# Run the relay client example
+run-example:
+	@echo "Running relay client example..."
+	VIPER_CLIENT_URL=http://localhost:8080 go run examples/direct_query.go
+
+# Start viper-client with viper-network support
+run-with-viper-network: setup-viper-network
+	@echo "Starting viper-client with viper-network support..."
+	go run cmd/server/main.go
+
+# Run the relay example that connects directly to viper-network
+run-relay-example:
+	@echo "Running relay example connecting directly to viper-network..."
+	go run cmd/relay-example/main.go 

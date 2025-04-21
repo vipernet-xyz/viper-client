@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/dhruvsharma/viper-client/docs"
 	"github.com/dhruvsharma/viper-client/internal/api"
 	"github.com/dhruvsharma/viper-client/internal/apps"
 	"github.com/dhruvsharma/viper-client/internal/db"
@@ -52,6 +53,9 @@ func main() {
 	endpointManager := rpc.NewDBEndpointManager(database.DB)
 	rpcDispatcher := rpc.NewDispatcher(endpointManager)
 
+	// Initialize Viper Network handler
+	viperNetworkHandler := rpc.NewViperNetworkHandler(endpointManager)
+
 	// Configure default rate limits (requests per second and burst capacity)
 	defaultRateLimit := 30
 	defaultBurstCapacity := 60
@@ -84,7 +88,7 @@ func main() {
 	router.Use(middleware.IPRateLimiter(defaultRateLimit, defaultBurstCapacity))
 
 	// Setup Swagger
-	api.SetupSwagger(router)
+	docs.SetupSwaggerHandlers(router)
 
 	// Public routes
 	// @Summary Health check endpoint
@@ -120,6 +124,14 @@ func main() {
 	// Initialize and register RPC handler
 	rpcHandler := api.NewRPCHandler(rpcDispatcher, appsService, database)
 	rpcHandler.RegisterRoutes(router)
+
+	// Initialize and register Viper Network handler
+	viperNetworkAPIHandler := api.NewViperNetworkHandler(viperNetworkHandler, appsService)
+	viperNetworkAPIHandler.RegisterRoutes(router)
+
+	// Initialize and register Relay handler
+	relayHandler := api.NewRelayHandler(endpointManager)
+	relayHandler.RegisterRoutes(router)
 
 	// API routes - protected by Auto Authentication middleware
 	apiGroup := router.Group("/api")

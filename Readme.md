@@ -17,7 +17,28 @@ This project provides a backend service for managing decentralized RPC (Remote P
    ├── middleware/              # Middleware for logging, rate limiting, error handling, etc.
    └── utils/                   # Utility functions, configuration loaders, etc.
 /migrations                     # Database migration files
+/docs                           # Documentation files
 ```
+
+## Features
+
+### RPC Forwarding
+
+Provides a unified API to forward RPC requests to various blockchain networks through verified RPC endpoints.
+
+### Viper Network Integration
+
+Offers direct access to Viper Network functionality including height queries, transaction submission, and account information.
+
+### Relay Functionality
+
+Implements the full relay protocol for secure communication with the Viper Network, including:
+- Session dispatching
+- Application Authentication Token (AAT) generation
+- Cryptographically signed relay requests
+- Direct and full-flow relay execution
+
+For detailed information about the relay functionality, see [Relay Documentation](docs/relay.md).
 
 ## Getting Started
 
@@ -71,6 +92,44 @@ Or use the Makefile:
 ```
 make run
 ```
+
+## API Usage
+
+### RPC Endpoints
+
+Send RPC requests to blockchain networks:
+
+```bash
+curl -X POST http://localhost:8080/rpc/1 \
+  -H "Content-Type: application/json" \
+  -H "X-App-ID: your_app_id" \
+  -H "X-API-Key: your_api_key" \
+  -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+```
+
+### Relay Endpoints
+
+Execute a complete relay process:
+
+```bash
+curl -X POST http://localhost:8080/relay/execute \
+  -H "Content-Type: application/json" \
+  -H "X-App-ID: your_app_id" \
+  -H "X-API-Key: your_api_key" \
+  -d '{
+     "pub_key": "a0b7789c0aa164cbee08638cf7a22c2c68eabb98247d559b4b650ef7675a92d7",
+     "blockchain": "0001",
+     "geo_zone": "0001",
+     "num_servicers": 1,
+     "data": "{\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1,\"jsonrpc\":\"2.0\"}",
+     "method": "POST",
+     "headers": {
+       "Content-Type": "application/json"
+     }
+  }'
+```
+
+For more relay examples, see the [Relay Documentation](docs/relay.md).
 
 ## Database Migrations
 
@@ -141,3 +200,14 @@ make docker-test-integration
 ## License
 
 [MIT](LICENSE) 
+
+
+
+Client public key: ba5a588d707a557c9914d2070f19d7f250cb9bdc2b39ce79201106713ed9ad01
+Client address: deabf47d228c0df4ff6c766d93acf56bd44dc214
+Client private key (seed only): b3cc669e939f6c8d51d34129d4445777eb3caf9c311c1947e0e927178848205d
+Account created successfully:
+Address: 665b339250e56cb4dae5a9f25143253eefd4d027
+
+viper wallet transfer b826a8a10bc7363702ad7f7ae358b157993aa2bd 665b339250e56cb4dae5a9f25143253eefd4d027 120000000000 viper-test ""
+viper requestors stake 665b339250e56cb4dae5a9f25143253eefd4d027 120000000000 0001,0002 0001 1 viper-test

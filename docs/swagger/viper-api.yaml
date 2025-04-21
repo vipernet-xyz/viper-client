@@ -1,0 +1,1062 @@
+openapi: 3.0.0
+info:
+  title: Viper Client API
+  description: |
+    API for interacting with the Viper decentralized RPC network and managing client applications.
+    Includes endpoints for health checking, authentication, application management, and blockchain RPC proxying.
+  version: 1.0.0
+  
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    AppIdAuth:
+      type: apiKey
+      in: header
+      name: X-App-ID
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      
+  schemas:
+    # Core application schemas
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+          example: success
+        message:
+          type: string
+          example: Service is healthy and connected to database
+    
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        name:
+          type: string
+          example: John Doe
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    
+    CreateAppRequest:
+      type: object
+      required:
+        - name
+        - allowed_chains
+      properties:
+        name:
+          type: string
+          example: My Blockchain App
+        description:
+          type: string
+          example: A decentralized exchange app
+        allowed_origins:
+          type: array
+          items:
+            type: string
+          example: ["https://myapp.com", "https://dev.myapp.com"]
+        allowed_chains:
+          type: array
+          items:
+            type: integer
+          example: [1, 137, 56]
+          
+    AppResponse:
+      type: object
+      properties:
+        app:
+          type: object
+          properties:
+            id:
+              type: integer
+            user_id:
+              type: integer
+            name:
+              type: string
+            description:
+              type: string
+            app_id:
+              type: string
+            allowed_origins:
+              type: array
+              items:
+                type: string
+            allowed_chains:
+              type: array
+              items:
+                type: integer
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+              
+    CreateAppResponse:
+      type: object
+      properties:
+        app:
+          $ref: '#/components/schemas/AppResponse/properties/app'
+        api_key:
+          type: string
+          example: vpr_12345abcdef67890
+        message:
+          type: string
+          example: App created successfully. Keep your API key safe, as it won't be shown again.
+          
+    AppsResponse:
+      type: object
+      properties:
+        apps:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppResponse/properties/app'
+            
+    UpdateAppRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Updated App Name
+        description:
+          type: string
+          example: Updated app description
+        allowed_origins:
+          type: array
+          items:
+            type: string
+          example: ["https://updated-domain.com"]
+        allowed_chains:
+          type: array
+          items:
+            type: integer
+          example: [1, 56, 137]
+          
+    DeleteAppResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: App deleted successfully
+    
+    # Existing Viper Network schemas
+    ViperHeightRequest:
+      type: object
+      properties: {}
+    
+    ViperHeightResponse:
+      type: object
+      properties:
+        height:
+          type: integer
+          description: Current block height
+          example: 12345
+    
+    ViperRelayRequest:
+      type: object
+      properties:
+        blockchain:
+          type: string
+          description: Chain ID in Viper format
+          example: "0002"
+        data:
+          type: string
+          description: JSON-RPC request as string
+          example: "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}"
+        method:
+          type: string
+          enum: [GET, POST]
+          default: POST
+          description: HTTP method for the relay
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+          description: Headers for the relay request
+        
+    ViperRelayResponse:
+      type: object
+      properties:
+        response:
+          type: string
+          description: Response from the blockchain
+        proof:
+          type: object
+          description: Proof of the relay
+          
+    ViperServicersRequest:
+      type: object
+      properties:
+        height:
+          type: integer
+          description: Block height to query (0 for latest)
+          example: 0
+        opts:
+          type: object
+          properties:
+            page:
+              type: integer
+              description: Page number
+              example: 1
+            per_page:
+              type: integer
+              description: Items per page
+              example: 10
+              
+    ViperServicersResponse:
+      type: object
+      properties:
+        result:
+          type: array
+          items:
+            type: object
+            properties:
+              address:
+                type: string
+              public_key:
+                type: string
+              chains:
+                type: array
+                items:
+                  type: string
+              stake:
+                type: string
+        total_pages:
+          type: integer
+        page:
+          type: integer
+    
+    ViperSupportedChainsRequest:
+      type: object
+      properties: {}
+      
+    ViperSupportedChainsResponse:
+      type: array
+      items:
+        type: string
+        example: "0002"
+        
+    ViperBlockRequest:
+      type: object
+      properties:
+        height:
+          type: integer
+          description: Block height to query (0 for latest)
+          example: 12345
+          
+    ViperBlockResponse:
+      type: object
+      properties:
+        block:
+          type: object
+          description: Block data
+          
+    ViperTxRequest:
+      type: object
+      properties:
+        hash:
+          type: string
+          description: Transaction hash
+          example: "0x123..."
+          
+    ViperTxResponse:
+      type: object
+      properties:
+        tx:
+          type: object
+          description: Transaction data
+          
+    ViperAccountRequest:
+      type: object
+      properties:
+        address:
+          type: string
+          description: Account address
+          example: "0x123..."
+          
+    ViperAccountResponse:
+      type: object
+      properties:
+        account:
+          type: object
+          description: Account data
+          
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          
+  parameters:
+    AppIdParam:
+      name: appId
+      in: query
+      description: Application identifier
+      schema:
+        type: string
+        
+    ApiKeyParam:
+      name: apiKey
+      in: query
+      description: API key for authentication
+      schema:
+        type: string
+
+security:
+  - ApiKeyAuth: []
+    AppIdAuth: []
+    
+paths:
+  # Core application endpoints
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Check if the service is running and connected to the database
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user
+      description: Retrieves information about the currently authenticated user
+      operationId: getCurrentUser
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successfully retrieved user information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+  /api/profile:
+    get:
+      tags:
+        - Authentication
+      summary: Get user profile
+      description: Retrieves the profile information for the authenticated user
+      operationId: getUserProfile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successfully retrieved user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+  /api/apps/:
+    post:
+      tags:
+        - Apps
+      summary: Create a new application
+      description: Creates a new application for the authenticated user
+      operationId: createApp
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAppRequest'
+      responses:
+        '201':
+          description: Application created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAppResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    get:
+      tags:
+        - Apps
+      summary: Get all applications for a user
+      description: Retrieves all applications owned by the authenticated user
+      operationId: getUserApps
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of applications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+  /api/apps/{id}:
+    get:
+      tags:
+        - Apps
+      summary: Get an application by ID
+      description: Retrieves a specific application by its ID
+      operationId: getApp
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Application ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Application details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    put:
+      tags:
+        - Apps
+      summary: Update an application
+      description: Updates an existing application by its ID
+      operationId: updateApp
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Application ID
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAppRequest'
+      responses:
+        '200':
+          description: Updated application
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    delete:
+      tags:
+        - Apps
+      summary: Delete an application
+      description: Deletes an application by its ID
+      operationId: deleteApp
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Application ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteAppResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  # Existing Viper Network paths
+  /viper/height:
+    post:
+      tags:
+        - Viper Network
+      summary: Get current block height
+      description: Retrieves the current block height from the Viper Network
+      operationId: getViperHeight
+      security:
+        - ApiKeyAuth: []
+          AppIdAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppIdParam'
+        - $ref: '#/components/parameters/ApiKeyParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ViperHeightRequest'
+      responses:
+        '200':
+          description: Successfully retrieved height
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViperHeightResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+  /viper/relay:
+    post:
+      tags:
+        - Viper Network
+      summary: Relay a request to a blockchain
+      description: Relays a request to a blockchain through the Viper Network
+      operationId: viperRelay
+      security:
+        - ApiKeyAuth: []
+          AppIdAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppIdParam'
+        - $ref: '#/components/parameters/ApiKeyParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ViperRelayRequest'
+      responses:
+        '200':
+          description: Successfully relayed request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViperRelayResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+  /viper/servicers:
+    post:
+      tags:
+        - Viper Network
+      summary: Get servicers information
+      description: Retrieves information about servicers in the Viper Network
+      operationId: getViperServicers
+      security:
+        - ApiKeyAuth: []
+          AppIdAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppIdParam'
+        - $ref: '#/components/parameters/ApiKeyParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ViperServicersRequest'
+      responses:
+        '200':
+          description: Successfully retrieved servicers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViperServicersResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+  /viper/supportedchains:
+    post:
+      tags:
+        - Viper Network
+      summary: Get supported chains
+      description: Retrieves the list of chains supported by the Viper Network
+      operationId: getViperSupportedChains
+      security:
+        - ApiKeyAuth: []
+          AppIdAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppIdParam'
+        - $ref: '#/components/parameters/ApiKeyParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ViperSupportedChainsRequest'
+      responses:
+        '200':
+          description: Successfully retrieved supported chains
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViperSupportedChainsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+  /viper/block:
+    post:
+      tags:
+        - Viper Network
+      summary: Get block information
+      description: Retrieves block information from the Viper Network
+      operationId: getViperBlock
+      security:
+        - ApiKeyAuth: []
+          AppIdAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppIdParam'
+        - $ref: '#/components/parameters/ApiKeyParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ViperBlockRequest'
+      responses:
+        '200':
+          description: Successfully retrieved block
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViperBlockResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+  /viper/tx:
+    post:
+      tags:
+        - Viper Network
+      summary: Get transaction information
+      description: Retrieves transaction information from the Viper Network
+      operationId: getViperTx
+      security:
+        - ApiKeyAuth: []
+          AppIdAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppIdParam'
+        - $ref: '#/components/parameters/ApiKeyParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ViperTxRequest'
+      responses:
+        '200':
+          description: Successfully retrieved transaction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViperTxResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /viper/account:
+    post:
+      tags:
+        - Viper Network
+      summary: Get account information
+      description: Retrieves account information from the Viper Network
+      operationId: getViperAccount
+      security:
+        - ApiKeyAuth: []
+          AppIdAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppIdParam'
+        - $ref: '#/components/parameters/ApiKeyParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ViperAccountRequest'
+      responses:
+        '200':
+          description: Successfully retrieved account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViperAccountResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+  /viper/dispatch:
+    post:
+      tags:
+        - Viper Network
+      summary: Dispatch request
+      description: Dispatches a request through the Viper Network
+      operationId: viperDispatch
+      security:
+        - ApiKeyAuth: []
+          AppIdAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppIdParam'
+        - $ref: '#/components/parameters/ApiKeyParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Successfully dispatched request
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+  /viper/challenge:
+    post:
+      tags:
+        - Viper Network
+      summary: Generate challenge
+      description: Generates a challenge in the Viper Network
+      operationId: viperChallenge
+      security:
+        - ApiKeyAuth: []
+          AppIdAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppIdParam'
+        - $ref: '#/components/parameters/ApiKeyParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Successfully generated challenge
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+  /viper/websocket:
+    get:
+      tags:
+        - Viper Network
+      summary: WebSocket connection
+      description: Establishes a WebSocket connection with the Viper Network
+      operationId: viperWebSocket
+      security:
+        - ApiKeyAuth: []
+          AppIdAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppIdParam'
+        - $ref: '#/components/parameters/ApiKeyParam'
+      responses:
+        '101':
+          description: WebSocket connection established
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+  /rpc/{chainId}:
+    post:
+      tags:
+        - RPC
+      summary: Send JSON-RPC request
+      description: Sends a standard JSON-RPC request to the specified chain
+      operationId: jsonRpcRequest
+      security:
+        - ApiKeyAuth: []
+          AppIdAuth: []
+      parameters:
+        - name: chainId
+          in: path
+          required: true
+          description: Chain ID (use 1 for Viper Network)
+          schema:
+            type: integer
+        - $ref: '#/components/parameters/AppIdParam'
+        - $ref: '#/components/parameters/ApiKeyParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - jsonrpc
+                - method
+                - id
+              properties:
+                jsonrpc:
+                  type: string
+                  enum: ['2.0']
+                method:
+                  type: string
+                  example: eth_blockNumber
+                params:
+                  type: array
+                  items:
+                    type: object
+                id:
+                  type: integer
+                  example: 1
+      responses:
+        '200':
+          description: JSON-RPC response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jsonrpc:
+                    type: string
+                    enum: ['2.0']
+                  result:
+                    type: object
+                  error:
+                    type: object
+                  id:
+                    type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse' 

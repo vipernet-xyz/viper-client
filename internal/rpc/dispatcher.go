@@ -20,9 +20,10 @@ var (
 
 // Dispatcher handles forwarding RPC requests to blockchain nodes
 type Dispatcher struct {
-	endpointManager EndpointManager
-	httpClient      *http.Client
-	lock            sync.RWMutex
+	endpointManager     EndpointManager
+	httpClient          *http.Client
+	viperNetworkHandler *ViperNetworkHandler
+	lock                sync.RWMutex
 	// Cache could be added here for common requests
 }
 
@@ -34,11 +35,14 @@ type EndpointManager interface {
 
 // NewDispatcher creates a new RPC dispatcher with the given endpoint manager
 func NewDispatcher(manager EndpointManager) *Dispatcher {
+	viperHandler := NewViperNetworkHandler(manager)
+
 	return &Dispatcher{
 		endpointManager: manager,
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
+		viperNetworkHandler: viperHandler,
 	}
 }
 
@@ -60,6 +64,11 @@ type RPCResponse struct {
 
 // Forward forwards an RPC request to an available endpoint for the given chain
 func (d *Dispatcher) Forward(ctx context.Context, chainID int, requestBody []byte) ([]byte, error) {
+	// Check if this is a request for the Viper Network
+	if chainID == ViperNetworkChainID {
+		return d.ForwardToViperNetwork(ctx, requestBody)
+	}
+
 	// Parse the incoming request to validate and potentially use for caching
 	var rpcRequest RPCRequest
 	if err := json.Unmarshal(requestBody, &rpcRequest); err != nil {
@@ -105,4 +114,28 @@ func (d *Dispatcher) Forward(ctx context.Context, chainID int, requestBody []byt
 	d.endpointManager.UpdateEndpointHealth(selectedEndpoint.ID, "healthy")
 
 	return responseBody, nil
+}
+
+// ForwardToViperNetwork handles forwarding requests to the Viper Network,
+// translating between JSON-RPC and Viper Network formats
+func (d *Dispatcher) ForwardToViperNetwork(ctx context.Context, requestBody []byte) ([]byte, error) {
+	// Convert from JSON-RPC format to Viper Network format
+	requestType, viperRequest, err := ConvertJSONRPCToViperFormat(requestBody)
+	if err != nil {
+		return nil, err
+	}
+
+	// Send the request to Viper Network
+	viperResponse, err := d.viperNetworkHandler.HandleViperRequest(ctx, requestType, viperRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert the response back to JSON-RPC format
+	jsonRPCResponse, err := ConvertViperResponseToJSONRPC(viperResponse, requestBody)
+	if err != nil {
+		return nil, err
+	}
+
+	return jsonRPCResponse, nil
 }
