@@ -19,6 +19,7 @@ type DatabaseInterface interface {
 // AutoAuthMiddleware creates a Gin middleware for automatic user creation based on token email
 func AutoAuthMiddleware(database DatabaseInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		CORSMiddleware(c)
 		// Get the Authorization header
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
