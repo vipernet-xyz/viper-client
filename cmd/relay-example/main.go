@@ -5,41 +5,54 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
-	"github.com/dhruvsharma/viper-client/internal/relay"
-)
-
-const (
-	// After registering, replace this with your actual private key
-	// Only use the SEED portion (first 64 hex chars) of the ED25519 key
-	privateKey = "b3cc669e939f6c8d51d34129d4445777eb3caf9c311c1947e0e927178848205d" // Leave empty to generate a new key
-
-	// Sample servicer URL
-	servicerURL = "http://127.0.0.1:8082"
+	"github.com/illegalcall/viper-client/internal/relay"
 )
 
 func main() {
+	// Get client configuration from environment or use defaults
+	clientURL := os.Getenv("VIPER_CLIENT_URL")
+	if clientURL == "" {
+		clientURL = "http://localhost:8080"
+	}
+
+	appID := os.Getenv("VIPER_APP_ID")
+	if appID == "" {
+		appID = "test_app"
+	}
+
+	apiKey := os.Getenv("VIPER_API_KEY")
+	if apiKey == "" {
+		apiKey = "test_key"
+	}
+
+	fmt.Println("Viper Network Client Example")
+	fmt.Println("--------------------------")
+	fmt.Printf("Using viper-client at: %s\n\n", clientURL)
+
 	var client *relay.Client
 	var err error
 
-	if privateKey == "" {
+	// Try to use an existing private key from environment variable
+	privateKeyEnv := os.Getenv("VIPER_PRIVATE_KEY")
+	if privateKeyEnv != "" {
+		fmt.Println("=== USING REGISTERED KEY ===")
+		client, err = relay.NewClientWithSigner("", "", "", privateKeyEnv)
+		if err != nil {
+			log.Fatalf("Failed to create relay client with signer: %v", err)
+		}
+	} else {
 		// Generate a new random key (for first-time setup)
+		fmt.Println("=== FIRST TIME SETUP - REGISTRATION NEEDED ===")
 		client, err = relay.NewClient("", "", "")
 		if err != nil {
 			log.Fatalf("Failed to create relay client: %v", err)
 		}
-		fmt.Println("=== FIRST TIME SETUP - REGISTRATION NEEDED ===")
-	} else {
-		// Use the registered key
-		client, err = relay.NewClientWithSigner("", "", "", privateKey)
-		if err != nil {
-			log.Fatalf("Failed to create relay client with signer: %v", err)
-		}
-		fmt.Println("=== USING REGISTERED KEY ===")
 	}
 
-	// Get and print key information
+	// Get client information
 	pubKey, err := client.GetPublicKey()
 	if err != nil {
 		log.Fatalf("Failed to get public key: %v", err)
@@ -53,30 +66,20 @@ func main() {
 	fmt.Printf("Client address: %s\n", address)
 
 	// Print registration instructions if using a new key
-	if privateKey == "" {
+	if privateKeyEnv == "" {
 		privateKey, err := client.GetPrivateKey()
 		if err != nil {
 			log.Fatalf("Failed to get private key: %v", err)
 		}
-		fmt.Printf("Client private key (seed only): %s\n", privateKey)
+		fmt.Printf("Client private key: %s\n", privateKey)
 		fmt.Println("\n=== IMPORTANT: REGISTRATION STEPS ===")
 		fmt.Println("1. Copy the private key above")
 		fmt.Printf("2. Run: viper wallet create-account %s\n", privateKey)
-
-		// This will create a new address in the Viper wallet
-		fmt.Println("3. Note the new address created by the wallet command")
-		fmt.Println("4. Fund that address (not the client address above):")
-		fmt.Println("   viper wallet transfer <funded_address> <NEW_WALLET_ADDRESS> 120000000000 viper-test \"\"")
-		fmt.Println("5. Stake that address as a requestor:")
-		fmt.Println("   viper requestors stake <NEW_WALLET_ADDRESS> 120000000000 0001,0002 0001 1 viper-test")
-		fmt.Println("6. Update this program with your private key in the privateKey constant")
-
-		// Instructions for advanced users to access relays with their own address
-		fmt.Println("\n==== FOR ADVANCED USERS ONLY ====")
-		fmt.Println("If you want to use the client's address directly (not recommended):")
-		fmt.Printf("- Update the PubKey field in your relay options to use the registered wallet's public key\n")
-		fmt.Println("==== END ADVANCED SECTION ====")
-
+		fmt.Printf("3. Run: viper wallet transfer <funded_address> %s 120000000000 viper-test \"\"\n", address)
+		fmt.Printf("4. Wait ~15 seconds for the transaction to confirm\n")
+		fmt.Printf("5. Run: viper requestors stake %s 120000000000 0001,0002 0001 1 viper-test\n", address)
+		fmt.Println("6. Set the VIPER_PRIVATE_KEY environment variable with your private key for next run:")
+		fmt.Printf("   export VIPER_PRIVATE_KEY=%s\n", privateKey)
 		fmt.Println("=== END REGISTRATION STEPS ===\n")
 	}
 
@@ -92,7 +95,6 @@ func main() {
 
 	// Create relay options
 	opts := relay.Options{
-		// If using a registered wallet, you should replace this with that wallet's public key
 		PubKey:       pubKey,
 		Blockchain:   "0001", // Ethereum
 		GeoZone:      "0001",
@@ -114,7 +116,6 @@ func main() {
 	// Execute a direct relay to a specific servicer
 	fmt.Println("\nExecuting direct relay...")
 	directOpts := opts
-	directOpts.GeoZone = "0001" // Ensure this is explicitly set
 
 	// Create a JSON-RPC request
 	rpcRequest := map[string]interface{}{
@@ -131,6 +132,12 @@ func main() {
 	}
 
 	directOpts.Data = string(rpcJSON)
+
+	// Get the servicer URL from environment or use default
+	servicerURL := os.Getenv("VIPER_SERVICER_URL")
+	if servicerURL == "" {
+		servicerURL = "http://127.0.0.1:8082"
+	}
 
 	directResp, err := client.DirectRelay(ctx, directOpts, servicerURL, pubKey)
 	if err != nil {

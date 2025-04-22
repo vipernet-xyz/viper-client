@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/dhruvsharma/viper-client/internal/apps"
-	"github.com/dhruvsharma/viper-client/internal/db"
-	"github.com/dhruvsharma/viper-client/internal/rpc"
 	"github.com/gin-gonic/gin"
+	"github.com/illegalcall/viper-client/internal/apps"
+	"github.com/illegalcall/viper-client/internal/db"
+	"github.com/illegalcall/viper-client/internal/rpc"
 )
 
 // RPCHandler handles blockchain RPC requests

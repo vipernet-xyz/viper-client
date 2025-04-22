@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/dhruvsharma/viper-client/internal/models"
+	"github.com/illegalcall/viper-client/internal/models"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 )

@@ -51,7 +51,7 @@ For detailed information about the relay functionality, see [Relay Documentation
 
 1. Clone the repository:
    ```
-   git clone https://github.com/dhruvsharma/viper-client.git
+   git clone https://github.com/illegalcall/viper-client.git
    cd viper-client
    ```
 
@@ -211,3 +211,92 @@ Address: 665b339250e56cb4dae5a9f25143253eefd4d027
 
 viper wallet transfer b826a8a10bc7363702ad7f7ae358b157993aa2bd 665b339250e56cb4dae5a9f25143253eefd4d027 120000000000 viper-test ""
 viper requestors stake 665b339250e56cb4dae5a9f25143253eefd4d027 120000000000 0001,0002 0001 1 viper-test
+
+
+
+
+
+
+
+
+## Registration Process
+
+To use the Viper Network, you need to:
+
+1. Create a wallet account with your private key
+   ```bash
+   viper wallet create-account <privateKey>
+   ```
+
+2. Fund your account (testnet)
+   ```bash
+   viper wallet transfer <funded_addr> <your_address> 120000000000 viper-test ""
+   ```
+
+3. Stake your account as a requestor
+   ```bash
+   viper requestors stake <your_address> 120000000000 0001,0002 0001 1 viper-test
+   ```
+
+## Step-by-Step Execution Guide
+
+Follow these exact steps to quickly get up and running with the example:
+
+1. **Set the private key environment variable**:
+   ```bash
+   export VIPER_PRIVATE_KEY=b3cc669e939f6c8d51d34129d4445777eb3caf9c311c1947e0e927178848205d
+   ```
+
+2. **Run the example directly**:
+   ```bash
+   go run examples/simple_relay/relay.go
+   ```
+
+3. **Expected output**: You should see account information and a successful relay:
+   ```
+   Client address: deabf47d228c0df4ff6c766d93acf56bd44dc214
+   Client public key: ba5a588d707a557c9914d2070f19d7f250cb9bdc2b39ce79201106713ed9ad01
+   Current network height: 72
+   SyncedDispatch using height: 72
+   Dispatch request: {"chain":"0001","num_servicers":1,"requestor_public_key":"ba5a588d707a557c9914d2070f19d7f250cb9bdc2b39ce79201106713ed9ad01","session_height":72,"zone":"0001"}
+   Session dispatched successfully!
+   ```
+
+### Account Registration (One-Time Setup)
+
+If you need to register your own account instead of using the provided one:
+
+1. **Generate a new account**:
+   ```bash
+   go run examples/simple_relay/relay.go
+   ```
+   This will output a new private key and address when no VIPER_PRIVATE_KEY is set.
+
+2. **Create wallet account on viper network**:
+   ```bash
+   viper wallet create-account YOUR_PRIVATE_KEY
+   ```
+
+3. **Fund your account from an existing funded address**:
+   ```bash
+   viper wallet transfer FUNDED_ADDRESS YOUR_ADDRESS 120000000000 viper-test ""
+   ```
+
+4. **Stake your account as a requestor**:
+   ```bash
+   viper requestors stake YOUR_ADDRESS 120000000000 0001,0002 0001 1 viper-test
+   ```
+
+5. **Wait for confirmation** (approximately 15 seconds)
+
+6. **Set the environment variable with your private key**:
+   ```bash
+   export VIPER_PRIVATE_KEY=YOUR_PRIVATE_KEY
+   ```
+
+7. **Run the example again**:
+   ```bash
+   go run examples/simple_relay/relay.go
+   ```
+
+## Running the Example

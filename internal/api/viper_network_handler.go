@@ -4,9 +4,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/dhruvsharma/viper-client/internal/apps"
-	"github.com/dhruvsharma/viper-client/internal/rpc"
 	"github.com/gin-gonic/gin"
+	"github.com/illegalcall/viper-client/internal/apps"
+	"github.com/illegalcall/viper-client/internal/rpc"
 )
 
 // ViperNetworkHandler handles direct requests to the Viper Network

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/dhruvsharma/viper-client/internal/models"
+	"github.com/illegalcall/viper-client/internal/models"
 )
 
 // DBEndpointManager manages RPC endpoints using a database

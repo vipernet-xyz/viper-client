@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/dhruvsharma/viper-client/internal/apps"
 	"github.com/gin-gonic/gin"
+	"github.com/illegalcall/viper-client/internal/apps"
 )
 
 // CreateAppRequest represents the request to create a new app

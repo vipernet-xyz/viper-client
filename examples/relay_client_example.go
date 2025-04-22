@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/dhruvsharma/viper-client/internal/rpc"
+	"github.com/illegalcall/viper-client/internal/rpc"
 )
 
 const (

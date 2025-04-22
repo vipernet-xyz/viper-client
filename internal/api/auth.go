@@ -3,10 +3,10 @@ package api
 import (
 	"net/http"
 
-	"github.com/dhruvsharma/viper-client/internal/db"
-	"github.com/dhruvsharma/viper-client/internal/middleware"
-	"github.com/dhruvsharma/viper-client/internal/models"
 	"github.com/gin-gonic/gin"
+	"github.com/illegalcall/viper-client/internal/db"
+	"github.com/illegalcall/viper-client/internal/middleware"
+	"github.com/illegalcall/viper-client/internal/models"
 )
 
 // AuthHandler handles authentication requests
@@ -49,7 +49,7 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 // RegisterRoutes registers the auth routes
 func (h *AuthHandler) RegisterRoutes(router *gin.Engine) {
 	authGroup := router.Group("/auth")
-	
+
 	// Protected routes with auto authentication
 	protected := authGroup.Group("")
 	protected.Use(middleware.AutoAuthMiddleware(h.DB))

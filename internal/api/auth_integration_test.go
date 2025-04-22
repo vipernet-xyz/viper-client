@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dhruvsharma/viper-client/internal/auth"
-	"github.com/dhruvsharma/viper-client/internal/db"
 	"github.com/gin-gonic/gin"
+	"github.com/illegalcall/viper-client/internal/auth"
+	"github.com/illegalcall/viper-client/internal/db"
 )
 
 func TestAuthIntegration(t *testing.T) {

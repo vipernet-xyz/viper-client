@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/dhruvsharma/viper-client/internal/models"
+	"github.com/illegalcall/viper-client/internal/models"
 )
 
 var (

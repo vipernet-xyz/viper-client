@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/dhruvsharma/viper-client/internal/auth"
-	"github.com/dhruvsharma/viper-client/internal/db"
-	"github.com/dhruvsharma/viper-client/internal/models"
 	"github.com/gin-gonic/gin"
+	"github.com/illegalcall/viper-client/internal/auth"
+	"github.com/illegalcall/viper-client/internal/db"
+	"github.com/illegalcall/viper-client/internal/models"
 )
 
 // DatabaseInterface defines the interface for database operations needed by middleware

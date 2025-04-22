@@ -6,15 +6,15 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/dhruvsharma/viper-client/docs"
-	"github.com/dhruvsharma/viper-client/internal/api"
-	"github.com/dhruvsharma/viper-client/internal/apps"
-	"github.com/dhruvsharma/viper-client/internal/db"
-	"github.com/dhruvsharma/viper-client/internal/middleware"
-	"github.com/dhruvsharma/viper-client/internal/rpc"
-	"github.com/dhruvsharma/viper-client/internal/utils"
-	"github.com/gin-gonic/gin"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+	"github.com/illegalcall/viper-client/docs"
+	"github.com/illegalcall/viper-client/internal/api"
+	"github.com/illegalcall/viper-client/internal/apps"
+	"github.com/illegalcall/viper-client/internal/db"
+	"github.com/illegalcall/viper-client/internal/middleware"
+	"github.com/illegalcall/viper-client/internal/rpc"
+	"github.com/illegalcall/viper-client/internal/utils"
 	"go.uber.org/zap"
 )
 

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dhruvsharma/viper-client/internal/models"
 	"github.com/gin-gonic/gin"
+	"github.com/illegalcall/viper-client/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -113,12 +113,12 @@ func (h *AuthHandlerTest) GetCurrentUser(c *gin.Context) {
 
 func TestGetCurrentUser_Success(t *testing.T) {
 	router, mockDB := setupTestRouter()
-	
+
 	// Create handler
 	handler := &AuthHandlerTest{
 		DB: mockDB,
 	}
-	
+
 	// Create a test user
 	testUser := &models.User{
 		ID:             1,
@@ -128,7 +128,7 @@ func TestGetCurrentUser_Success(t *testing.T) {
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
-	
+
 	// Setup route with a middleware that sets the user in the context
 	router.GET("/auth/me", func(c *gin.Context) {
 		// Simulate middleware setting user in context
@@ -136,17 +136,17 @@ func TestGetCurrentUser_Success(t *testing.T) {
 		// Call the actual handler
 		handler.GetCurrentUser(c)
 	})
-	
+
 	// Create request
 	req, _ := http.NewRequest("GET", "/auth/me", nil)
 	w := httptest.NewRecorder()
-	
+
 	// Perform request
 	router.ServeHTTP(w, req)
-	
+
 	// Verify response
 	assert.Equal(t, http.StatusOK, w.Code)
-	
+
 	// Check that response contains user data
 	assert.Contains(t, w.Body.String(), `"id":1`)
 	assert.Contains(t, w.Body.String(), `"email":"test@example.com"`)
@@ -155,22 +155,22 @@ func TestGetCurrentUser_Success(t *testing.T) {
 
 func TestGetCurrentUser_NotAuthenticated(t *testing.T) {
 	router, mockDB := setupTestRouter()
-	
+
 	// Create handler
 	handler := &AuthHandlerTest{
 		DB: mockDB,
 	}
-	
+
 	// Setup route without setting user in context
 	router.GET("/auth/me", handler.GetCurrentUser)
-	
+
 	// Create request
 	req, _ := http.NewRequest("GET", "/auth/me", nil)
 	w := httptest.NewRecorder()
-	
+
 	// Perform request
 	router.ServeHTTP(w, req)
-	
+
 	// Verify response
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Contains(t, w.Body.String(), "Not authenticated")
@@ -178,12 +178,12 @@ func TestGetCurrentUser_NotAuthenticated(t *testing.T) {
 
 func TestGetCurrentUser_InvalidUserObject(t *testing.T) {
 	router, mockDB := setupTestRouter()
-	
+
 	// Create handler
 	handler := &AuthHandlerTest{
 		DB: mockDB,
 	}
-	
+
 	// Setup route with a middleware that sets an invalid user object in the context
 	router.GET("/auth/me", func(c *gin.Context) {
 		// Set invalid user type (string instead of *models.User)
@@ -191,14 +191,14 @@ func TestGetCurrentUser_InvalidUserObject(t *testing.T) {
 		// Call the actual handler
 		handler.GetCurrentUser(c)
 	})
-	
+
 	// Create request
 	req, _ := http.NewRequest("GET", "/auth/me", nil)
 	w := httptest.NewRecorder()
-	
+
 	// Perform request
 	router.ServeHTTP(w, req)
-	
+
 	// Verify response
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Contains(t, w.Body.String(), "Invalid user object in context")

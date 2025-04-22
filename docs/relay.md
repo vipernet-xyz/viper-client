@@ -31,7 +31,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/dhruvsharma/viper-client/internal/relay"
+	"github.com/illegalcall/viper-client/internal/relay"
 )
 
 func main() {

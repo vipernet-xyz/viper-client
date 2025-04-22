@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dhruvsharma/viper-client/internal/utils"
+	"github.com/illegalcall/viper-client/internal/utils"
 )
 
 func TestDatabaseIntegration(t *testing.T) {

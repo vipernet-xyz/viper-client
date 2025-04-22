@@ -3,10 +3,10 @@ package api
 import (
 	"net/http"
 
-	"github.com/dhruvsharma/viper-client/internal/models"
-	"github.com/dhruvsharma/viper-client/internal/rpc"
-	"github.com/dhruvsharma/viper-client/internal/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/illegalcall/viper-client/internal/models"
+	"github.com/illegalcall/viper-client/internal/rpc"
+	"github.com/illegalcall/viper-client/internal/utils"
 )
 
 // RelayHandler handles the relay API endpoints

@@ -8,14 +8,13 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/dhruvsharma/viper-client/internal/auth"
-	"github.com/dhruvsharma/viper-client/internal/db"
 	"github.com/gin-gonic/gin"
+	"github.com/illegalcall/viper-client/internal/auth"
+	"github.com/illegalcall/viper-client/internal/db"
 )
 
 func setupTestEnv(t *testing.T) (*gin.Engine, *db.DB, *auth.Service, int) {
@@ -72,7 +71,7 @@ func setupTestEnv(t *testing.T) (*gin.Engine, *db.DB, *auth.Service, int) {
 	// Generate a token for the test user - we don't use this token but it's kept for reference
 	// in case we need to add Authorization header tests later
 	testToken := generateTestToken(user.Email, user.Name)
-	
+
 	_ = testToken // Using assignment to avoid unused variable warning
 
 	// Add middleware to set user info for testing
@@ -115,7 +114,7 @@ func generateTestToken(email, name string) string {
 		"email": email,
 		"name":  name,
 	}
-	
+
 	// Encode the payload
 	jsonPayload, _ := json.Marshal(payload)
 	base64Payload := base64.StdEncoding.EncodeToString(jsonPayload)
@@ -124,7 +123,7 @@ func generateTestToken(email, name string) string {
 	base64Payload = strings.ReplaceAll(base64Payload, "/", "_")
 	// Remove padding
 	base64Payload = strings.TrimRight(base64Payload, "=")
-	
+
 	// Create a mock token
 	return "header." + base64Payload + ".signature"
 }

@@ -11,8 +11,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dhruvsharma/viper-client/internal/models"
-	"github.com/dhruvsharma/viper-client/internal/utils"
+	"github.com/illegalcall/viper-client/internal/models"
+	"github.com/illegalcall/viper-client/internal/utils"
 )
 
 // Constants
@@ -83,6 +83,13 @@ type Options struct {
 	Method       string            // HTTP method (POST, GET, etc.)
 	Path         string            // Custom path for the relay
 	Headers      map[string]string // HTTP headers
+	Height       int64             // Optional session height
+}
+
+// DispatchOptions contains options for dispatch requests
+type DispatchOptions struct {
+	Height  int64             // Session height
+	Headers map[string]string // HTTP headers
 }
 
 // GetHeight gets the current block height from viper network
@@ -138,12 +145,26 @@ func (c *Client) GetHeight(ctx context.Context) (int64, error) {
 
 // Dispatch sends a dispatch request to get a session
 func (c *Client) Dispatch(ctx context.Context, opts Options) (*models.DispatchResponse, error) {
+	return c.DispatchWithOptions(ctx, opts.PubKey, opts.Blockchain, opts.GeoZone, opts.NumServicers, &DispatchOptions{
+		Height:  opts.Height,
+		Headers: opts.Headers,
+	})
+}
+
+// DispatchWithOptions sends a dispatch request to get a session with additional options
+func (c *Client) DispatchWithOptions(ctx context.Context, requestorPubKey, blockchain, geoZone string, numServicers int64, options *DispatchOptions) (*models.DispatchResponse, error) {
 	// Prepare request body
 	reqBody := map[string]interface{}{
-		"requestor_public_key": opts.PubKey,
-		"chain":                opts.Blockchain,
-		"geo_zone":             opts.GeoZone,
-		"num_servicers":        opts.NumServicers,
+		"requestor_public_key": requestorPubKey,
+		"chain":                blockchain,
+		"zone":                 geoZone,
+		"num_servicers":        numServicers,
+	}
+
+	// Add session height if provided in options
+	if options != nil && options.Height > 0 {
+		// The server expects 'session_height'
+		reqBody["session_height"] = options.Height
 	}
 
 	// Marshal to JSON
@@ -152,10 +173,13 @@ func (c *Client) Dispatch(ctx context.Context, opts Options) (*models.DispatchRe
 		return nil, fmt.Errorf("error marshaling request: %w", err)
 	}
 
+	// Log the request JSON for debugging
+	fmt.Printf("Dispatch request: %s\n", string(reqJSON))
+
 	// Choose the right URL
 	url := DefaultViperNetworkEndpoint + ViperDispatchEndpoint
 	if c.baseURL != "" {
-		url = c.baseURL + "/relay/dispatch"
+		url = c.baseURL + ViperDispatchEndpoint
 	}
 
 	// Create the request
@@ -164,10 +188,20 @@ func (c *Client) Dispatch(ctx context.Context, opts Options) (*models.DispatchRe
 		return nil, err
 	}
 
+	// Set standard headers
 	req.Header.Set("Content-Type", "application/json")
+
+	// Set API credentials if using REST API
 	if c.baseURL != "" {
 		req.Header.Set("X-App-ID", c.appID)
 		req.Header.Set("X-API-Key", c.apiKey)
+	}
+
+	// Add any custom headers from options
+	if options != nil && len(options.Headers) > 0 {
+		for k, v := range options.Headers {
+			req.Header.Set(k, v)
+		}
 	}
 
 	// Execute the request
@@ -310,8 +344,22 @@ func (c *Client) BuildRelay(ctx context.Context, session *models.Session, opts O
 	// Get the first servicer
 	servicer := session.Servicers[0]
 
-	// Get session block height
+	// Get session block height and make sure it's not zero
 	sessionHeight := session.Header.SessionBlockHeight
+	if sessionHeight == 0 {
+		// If the session height is zero, use the height from options or get current height
+		if opts.Height > 0 {
+			sessionHeight = opts.Height
+			fmt.Printf("Setting session height from options: %d\n", sessionHeight)
+		} else {
+			var err error
+			sessionHeight, err = c.GetHeight(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("error getting current height: %w", err)
+			}
+			fmt.Printf("Setting session height from current height: %d\n", sessionHeight)
+		}
+	}
 
 	// Create the payload
 	payload := &models.RelayPayload{
@@ -323,9 +371,9 @@ func (c *Client) BuildRelay(ctx context.Context, session *models.Session, opts O
 
 	// Create metadata
 	meta := &models.RelayMeta{
-		BlockHeight:  sessionHeight,
-		Subscription: false, // Regular relay
-		AI:           false, // No AI needed
+		BlockHeight:  sessionHeight, // Use the corrected session height
+		Subscription: false,         // Regular relay
+		AI:           false,         // No AI needed
 	}
 
 	// Generate request hash
@@ -346,11 +394,11 @@ func (c *Client) BuildRelay(ctx context.Context, session *models.Session, opts O
 		return nil, fmt.Errorf("error generating AAT: %w", err)
 	}
 
-	// Build the proof
+	// Build the proof with the corrected session height
 	proof, err := c.buildRelayProof(
 		requestHash,
 		entropy,
-		sessionHeight,
+		sessionHeight, // Use the corrected session height
 		servicer.PublicKey,
 		opts.Blockchain,
 		aat,
@@ -423,8 +471,8 @@ func (c *Client) SendRelay(ctx context.Context, relay *models.Relay, serviceURL 
 
 // ExecuteRelay performs a complete relay operation
 func (c *Client) ExecuteRelay(ctx context.Context, opts Options) (*models.RelayResponse, error) {
-	// Step 1: Dispatch a session
-	dispatchResp, err := c.Dispatch(ctx, opts)
+	// Step 1: Use SyncedDispatch instead of Dispatch to ensure height synchronization
+	dispatchResp, err := c.SyncedDispatch(ctx, opts)
 	if err != nil {
 		return nil, fmt.Errorf("dispatch error: %w", err)
 	}
@@ -451,10 +499,13 @@ func (c *Client) ExecuteRelay(ctx context.Context, opts Options) (*models.RelayR
 
 // DirectRelay sends a relay directly to a specific servicer
 func (c *Client) DirectRelay(ctx context.Context, opts Options, servicerURL, servicerPubKey string) (*models.RelayResponse, error) {
-	// Get current height
-	height, err := c.GetHeight(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error getting height: %w", err)
+	// Get current height if not specified
+	if opts.Height <= 0 {
+		height, err := c.GetHeight(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("error getting height: %w", err)
+		}
+		opts.Height = height
 	}
 
 	// Create a minimal session
@@ -464,7 +515,7 @@ func (c *Client) DirectRelay(ctx context.Context, opts Options, servicerURL, ser
 			Chain:              opts.Blockchain,
 			GeoZone:            opts.GeoZone,
 			NumServicers:       opts.NumServicers,
-			SessionBlockHeight: height,
+			SessionBlockHeight: opts.Height,
 		},
 		Servicers: []models.Servicer{
 			{
@@ -487,6 +538,12 @@ func (c *Client) DirectRelay(ctx context.Context, opts Options, servicerURL, ser
 
 // BlockchainRPC sends a simplified RPC request to a blockchain
 func (c *Client) BlockchainRPC(ctx context.Context, blockchain, method string, params []interface{}) (interface{}, error) {
+	// Get current height for the session
+	height, err := c.GetHeight(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting height: %w", err)
+	}
+
 	// Create JSON-RPC 2.0 request
 	rpcRequest := map[string]interface{}{
 		"jsonrpc": "2.0",
@@ -510,6 +567,7 @@ func (c *Client) BlockchainRPC(ctx context.Context, blockchain, method string, p
 		Data:         string(rpcJSON),
 		Method:       "POST",
 		Headers:      map[string]string{"Content-Type": "application/json"},
+		Height:       height, // Set the height
 	}
 
 	// Execute relay
@@ -550,4 +608,21 @@ func (c *Client) GetPrivateKey() (string, error) {
 		return fullKey[:64], nil
 	}
 	return fullKey, nil
+}
+
+// SyncedDispatch ensures a session is created with the current network height
+func (c *Client) SyncedDispatch(ctx context.Context, opts Options) (*models.DispatchResponse, error) {
+	// Get current height from network
+	height, err := c.GetHeight(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting height for dispatch: %w", err)
+	}
+
+	fmt.Printf("SyncedDispatch using height: %d\n", height)
+
+	// Set the height in options
+	opts.Height = height
+
+	// Call normal dispatch with updated height
+	return c.Dispatch(ctx, opts)
 }

@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dhruvsharma/viper-client/internal/auth"
-	"github.com/dhruvsharma/viper-client/internal/db"
 	"github.com/gin-gonic/gin"
+	"github.com/illegalcall/viper-client/internal/auth"
+	"github.com/illegalcall/viper-client/internal/db"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -201,7 +201,7 @@ func TestAutoAuthMiddlewareIntegration(t *testing.T) {
 	router.GET("/protected", AutoAuthMiddleware(authService, database), func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
-			"email": c.GetString("email"),
+			"email":  c.GetString("email"),
 		})
 	})
 

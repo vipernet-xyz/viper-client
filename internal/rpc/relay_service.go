@@ -12,8 +12,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dhruvsharma/viper-client/internal/models"
-	"github.com/dhruvsharma/viper-client/internal/utils"
+	"github.com/illegalcall/viper-client/internal/models"
+	"github.com/illegalcall/viper-client/internal/utils"
 )
 
 const (

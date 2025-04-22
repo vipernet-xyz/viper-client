@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dhruvsharma/viper-client/internal/models"
+	"github.com/illegalcall/viper-client/internal/models"
 )
 
 var (

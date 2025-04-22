@@ -1,6 +1,6 @@
 #!/bin/sh
 cat > /app/go.mod << 'EOL'
-module github.com/dhruvsharma/viper-client
+module github.com/illegalcall/viper-client
 
 go 1.20
 
