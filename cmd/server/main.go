@@ -6,15 +6,14 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/gin-contrib/cors"
+	"github.com/dhruvsharma/viper-client/docs"
+	"github.com/dhruvsharma/viper-client/internal/api"
+	"github.com/dhruvsharma/viper-client/internal/apps"
+	"github.com/dhruvsharma/viper-client/internal/db"
+	"github.com/dhruvsharma/viper-client/internal/middleware"
+	"github.com/dhruvsharma/viper-client/internal/rpc"
+	"github.com/dhruvsharma/viper-client/internal/utils"
 	"github.com/gin-gonic/gin"
-	"github.com/illegalcall/viper-client/docs"
-	"github.com/illegalcall/viper-client/internal/api"
-	"github.com/illegalcall/viper-client/internal/apps"
-	"github.com/illegalcall/viper-client/internal/db"
-	"github.com/illegalcall/viper-client/internal/middleware"
-	"github.com/illegalcall/viper-client/internal/rpc"
-	"github.com/illegalcall/viper-client/internal/utils"
 	"go.uber.org/zap"
 )
 
@@ -75,13 +74,6 @@ func main() {
 	// Initialize Gin router with logger middleware
 	router := gin.New()
 
-	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://app.vipernet.xyz", "http://localhost:5173"},
-		AllowMethods:     []string{"GET", "POST", "OPTIONS", "PUT"},
-		AllowHeaders:     []string{"Content-Type", "Authorization", "X-Cosmos-Address", "X-Cosmos-Signature"},
-		AllowCredentials: true,
-	}))
-
 	// Apply global middleware
 	router.Use(gin.Recovery())
 	router.Use(middleware.Logger(logger))
@@ -111,6 +103,7 @@ func main() {
 			return
 		}
 
+		middleware.CORSMiddleware(c)
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "success",
 			"message": "Service is healthy and connected to database",
