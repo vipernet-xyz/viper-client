@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"time"
 
@@ -17,9 +16,10 @@ import (
 // Constants for relay configuration
 const (
 	// Default chain parameters
-	BlockchainID  = "0001" // Ethereum
-	GeoZoneID     = "0001" // Global zone
-	ServicerCount = 1      // Number of servicers to include
+	BlockchainID         = "0002"                                                             // Ethereum
+	GeoZoneID            = "0001"                                                             // Global zone
+	ServicerCount        = 1                                                                  // Number of servicers to include
+	pubKey        string = "0507b3243eac1a905f3e8517146d34c2be90512a714226ec94f1b91d0ffb0771" //also, change in BlockchainRPC (internal/relay/client.go)
 )
 
 // Signer struct for handling cryptographic signing
@@ -151,64 +151,23 @@ func main() {
 	log.Println("Viper Network Simple Relay Example")
 	log.Println("--------------------------------")
 
-	// Check if a private key was provided via environment variable
-	privateKeyEnv := os.Getenv("VIPER_PRIVATE_KEY")
-
 	// We'll keep the signer for reference but we primarily use the relay client
 	var err error
 
 	// Create a new relay client or use the signer with an existing client
 	var client *relay.Client
 
-	if privateKeyEnv != "" {
-		// Use the private key with the client
-		client, err = relay.NewClientWithSigner("", "", "", privateKeyEnv)
-		if err != nil {
-			log.Fatalf("Error creating client with signer: %v", err)
-		}
-		log.Println("Using provided private key from environment")
-	} else {
-		// Create a new client
-		client, err = relay.NewClient("", "", "")
-		if err != nil {
-			log.Fatalf("Error creating client: %v", err)
-		}
-		log.Println("Generating new random keys...")
-	}
-
-	// Get client information
-	pubKey, err := client.GetPublicKey()
+	signer, err := NewRandomSigner()
 	if err != nil {
-		log.Fatalf("Error getting public key: %v", err)
+		log.Fatal("Error creating signer:", err)
 	}
 
-	address, err := client.GetAddress()
+	// Use the private key with the client
+	client, err = relay.NewClientWithSigner("", "", "", signer.privateKey)
 	if err != nil {
-		log.Fatalf("Error getting address: %v", err)
+		log.Fatalf("Error creating client with signer: %v", err)
 	}
-
-	log.Printf("Client address: %s", address)
-	log.Printf("Client public key: %s", pubKey)
-
-	// Show registration instructions if using a new key
-	if privateKeyEnv == "" {
-		privateKey, err := client.GetPrivateKey()
-		if err != nil {
-			log.Fatalf("Error getting private key: %v", err)
-		}
-		log.Printf("Client private key: %s", privateKey)
-
-		log.Println("\n=== REGISTRATION INSTRUCTIONS ===")
-		log.Printf("1. Create account: viper wallet create-account %s", privateKey)
-		log.Printf("2. Fund account: viper wallet transfer <funded_addr> %s 120000000000 viper-test \"\"", address)
-		log.Printf("3. Wait: sleep 15")
-		log.Printf("4. Stake account: viper requestors stake %s 120000000000 0001,0002 0001 1 viper-test", address)
-		log.Println("=== END REGISTRATION INSTRUCTIONS ===\n")
-	} else {
-		log.Println("\n=== USING REGISTERED ACCOUNT ===")
-		log.Printf("Using registered account with address: %s", address)
-		log.Println("===================================\n")
-	}
+	log.Println("Using provided private key from environment")
 
 	// Check current network height
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -241,7 +200,7 @@ func main() {
 		log.Printf("Session dispatched successfully!")
 		log.Printf("Session key: %s", dispatchResp.Session.Key)
 		log.Printf("Session header: %+v", dispatchResp.Session.Header)
-		log.Printf("Servicers in session: %d", len(dispatchResp.Session.Servicers))
+		log.Println("Servicers in session:", dispatchResp.Session.Servicers)
 
 		// If we have servicers, print their info
 		for i, servicer := range dispatchResp.Session.Servicers {
@@ -269,7 +228,7 @@ func main() {
 			opts.Data = string(rpcJSON)
 
 			// Try to build a relay
-			relay, err := client.BuildRelay(ctx, &dispatchResp.Session, opts)
+			relay, err := client.BuildRelay(ctx, dispatchResp.Session, opts)
 			if err != nil {
 				log.Printf("Error building relay: %v", err)
 			} else {
@@ -278,6 +237,8 @@ func main() {
 
 				// Send the relay to the first servicer
 				servicer := dispatchResp.Session.Servicers[0]
+				fmt.Println("proof:", relay.Proof.Token)
+				fmt.Println("servicer:", servicer, "sending relay...")
 				resp, err := client.SendRelay(ctx, relay, servicer.NodeURL)
 				if err != nil {
 					log.Printf("Error sending relay: %v", err)
