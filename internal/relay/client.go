@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"math/big"
 	"net/http"
 	"time"
+
+	"golang.org/x/crypto/sha3"
 
 	"github.com/illegalcall/viper-client/internal/models"
 	"github.com/illegalcall/viper-client/internal/utils"
@@ -232,25 +235,22 @@ func (c *Client) DispatchWithOptions(ctx context.Context, requestorPubKey, block
 }
 
 // generateAAT generates an Application Authentication Token
-func (c *Client) generateAAT(requestorPubKey string) (*models.ViperAAT, error) {
-	// Create the AAT object
-	aat := &models.ViperAAT{
-		Version:            "1.0",
-		RequestorPublicKey: requestorPubKey,
-		ClientPublicKey:    c.signer.GetPublicKey(),
+func (c *Client) AATGeneration(requestorPubKey string, clientPubKey string) (*models.ViperAAT, error) {
+	// create the aat object
+	aat := models.ViperAAT{
+		Version:         "0.0.1",
+		RequestorPubKey: requestorPubKey,
+		ClientPubKey:    clientPubKey,
+		Signature:       "",
 	}
-
-	// Create a message to sign: version + requestorPubKey + clientPubKey
-	message := fmt.Sprintf("%s%s%s", aat.Version, aat.RequestorPublicKey, aat.ClientPublicKey)
-
-	// Sign the message
-	signature, err := c.signer.Sign([]byte(message))
+	// marshal aat using json
+	sig, err := c.signer.Sign(aat.Hash())
 	if err != nil {
-		return nil, fmt.Errorf("error signing AAT: %w", err)
+		return &models.ViperAAT{}, err
 	}
-
-	aat.Signature = signature
-	return aat, nil
+	aat.Signature = sig
+	// stringify the signature into hex
+	return &aat, nil
 }
 
 // generateEntropy generates a random number for relay entropy
@@ -294,6 +294,7 @@ func (c *Client) buildRelayProof(
 	geoZone string,
 	numServicers int64,
 ) (*models.RelayProof, error) {
+
 	// Create relay proof
 	proof := &models.RelayProof{
 		RequestHash:        requestHash,
@@ -301,38 +302,80 @@ func (c *Client) buildRelayProof(
 		SessionBlockHeight: sessionHeight,
 		ServicerPubKey:     servicerPubKey,
 		Blockchain:         blockchain,
-		Token:              *aat,
+		Token:              aat,
 		GeoZone:            geoZone,
 		NumServicers:       numServicers,
 		RelayType:          1, // Regular relay
-		Weight:             1,
-		Address:            c.signer.GetAddress(),
 	}
 
-	// Create message to sign
-	// Format: requestHash+entropy+sessionHeight+servicerPubKey+blockchain+geoZone+token.signature+numServicers+relayType+weight+address
-	proofMsg := fmt.Sprintf("%s%d%d%s%s%s%s%d%d%d%s",
-		proof.RequestHash,
-		proof.Entropy,
-		proof.SessionBlockHeight,
-		proof.ServicerPubKey,
-		proof.Blockchain,
-		proof.GeoZone,
-		proof.Token.Signature,
-		proof.NumServicers,
-		proof.RelayType,
-		proof.Weight,
-		proof.Address,
-	)
+	proofBytes, err := GenerateProofBytes(proof)
+	if err != nil {
+		return nil, err
+	}
 
 	// Sign the proof
-	signature, err := c.signer.Sign([]byte(proofMsg))
+	signature, err := c.signer.Sign(proofBytes)
 	if err != nil {
 		return nil, fmt.Errorf("error signing relay proof: %w", err)
 	}
 	proof.Signature = signature
 
 	return proof, nil
+}
+
+// GenerateProofBytes returns relay proof as encoded bytes
+func GenerateProofBytes(proof *models.RelayProof) ([]byte, error) {
+	token, err := HashAAT(proof.Token)
+	if err != nil {
+		return nil, err
+	}
+
+	proofMap := &models.RelayProofForSignature{
+		RequestHash:        proof.RequestHash,
+		Entropy:            proof.Entropy,
+		SessionBlockHeight: proof.SessionBlockHeight,
+		ServicerPubKey:     proof.ServicerPubKey,
+		Blockchain:         proof.Blockchain,
+		Token:              token,
+		Signature:          "",
+		GeoZone:            proof.GeoZone,
+		NumServicers:       proof.NumServicers,
+		RelayType:          proof.RelayType,
+		Weight:             proof.Weight,
+	}
+
+	marshaledProof, err := json.Marshal(proofMap)
+	if err != nil {
+		return nil, err
+	}
+
+	hasher := sha3.New256()
+
+	_, err = hasher.Write(marshaledProof)
+	if err != nil {
+		return nil, err
+	}
+
+	return hasher.Sum(nil), nil
+}
+
+// HashAAT returns Viper AAT as hashed string
+func HashAAT(aat *models.ViperAAT) (string, error) {
+	tokenToSend := *aat
+	tokenToSend.Signature = ""
+	marshaledAAT, err := json.Marshal(tokenToSend)
+	if err != nil {
+		return "", err
+	}
+
+	hasher := sha3.New256()
+
+	_, err = hasher.Write(marshaledAAT)
+	if err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
 // BuildRelay builds a complete relay request
@@ -344,23 +387,6 @@ func (c *Client) BuildRelay(ctx context.Context, session *models.Session, opts O
 	// Get the first servicer
 	servicer := session.Servicers[0]
 
-	// Get session block height and make sure it's not zero
-	sessionHeight := session.Header.SessionBlockHeight
-	if sessionHeight == 0 {
-		// If the session height is zero, use the height from options or get current height
-		if opts.Height > 0 {
-			sessionHeight = opts.Height
-			fmt.Printf("Setting session height from options: %d\n", sessionHeight)
-		} else {
-			var err error
-			sessionHeight, err = c.GetHeight(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("error getting current height: %w", err)
-			}
-			fmt.Printf("Setting session height from current height: %d\n", sessionHeight)
-		}
-	}
-
 	// Create the payload
 	payload := &models.RelayPayload{
 		Data:    opts.Data,
@@ -371,9 +397,9 @@ func (c *Client) BuildRelay(ctx context.Context, session *models.Session, opts O
 
 	// Create metadata
 	meta := &models.RelayMeta{
-		BlockHeight:  sessionHeight, // Use the corrected session height
-		Subscription: false,         // Regular relay
-		AI:           false,         // No AI needed
+		BlockHeight:  session.Header.SessionHeight, // Use the corrected session height
+		Subscription: false,                        // Regular relay
+		AI:           false,                        // No AI needed
 	}
 
 	// Generate request hash
@@ -389,7 +415,7 @@ func (c *Client) BuildRelay(ctx context.Context, session *models.Session, opts O
 	}
 
 	// Generate AAT
-	aat, err := c.generateAAT(opts.PubKey)
+	aat, err := c.AATGeneration(opts.PubKey, c.signer.GetPublicKey())
 	if err != nil {
 		return nil, fmt.Errorf("error generating AAT: %w", err)
 	}
@@ -398,12 +424,12 @@ func (c *Client) BuildRelay(ctx context.Context, session *models.Session, opts O
 	proof, err := c.buildRelayProof(
 		requestHash,
 		entropy,
-		sessionHeight, // Use the corrected session height
+		session.Header.SessionHeight,
 		servicer.PublicKey,
-		opts.Blockchain,
+		session.Header.Chain,
 		aat,
-		opts.GeoZone,
-		opts.NumServicers,
+		session.Header.GeoZone,
+		session.Header.NumServicers,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error building proof: %w", err)
@@ -482,7 +508,7 @@ func (c *Client) ExecuteRelay(ctx context.Context, opts Options) (*models.RelayR
 	}
 
 	// Step 2: Build the relay using the session
-	relay, err := c.BuildRelay(ctx, &dispatchResp.Session, opts)
+	relay, err := c.BuildRelay(ctx, dispatchResp.Session, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error building relay: %w", err)
 	}
@@ -510,12 +536,11 @@ func (c *Client) DirectRelay(ctx context.Context, opts Options, servicerURL, ser
 
 	// Create a minimal session
 	session := &models.Session{
-		Header: models.Header{
-			RequestorPubKey:    opts.PubKey,
+		Header: models.SessionHeader{
+			RequestorPublicKey: opts.PubKey,
 			Chain:              opts.Blockchain,
 			GeoZone:            opts.GeoZone,
 			NumServicers:       opts.NumServicers,
-			SessionBlockHeight: opts.Height,
 		},
 		Servicers: []models.Servicer{
 			{
@@ -560,7 +585,7 @@ func (c *Client) BlockchainRPC(ctx context.Context, blockchain, method string, p
 
 	// Create relay options
 	opts := Options{
-		PubKey:       "a0b7789c0aa164cbee08638cf7a22c2c68eabb98247d559b4b650ef7675a92d7", // Default public key
+		PubKey:       "0507b3243eac1a905f3e8517146d34c2be90512a714226ec94f1b91d0ffb0771", // Default public key
 		Blockchain:   blockchain,
 		GeoZone:      "0001", // Default geo zone
 		NumServicers: 1,      // Default number of servicers
@@ -612,17 +637,6 @@ func (c *Client) GetPrivateKey() (string, error) {
 
 // SyncedDispatch ensures a session is created with the current network height
 func (c *Client) SyncedDispatch(ctx context.Context, opts Options) (*models.DispatchResponse, error) {
-	// Get current height from network
-	height, err := c.GetHeight(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error getting height for dispatch: %w", err)
-	}
-
-	fmt.Printf("SyncedDispatch using height: %d\n", height)
-
-	// Set the height in options
-	opts.Height = height
-
 	// Call normal dispatch with updated height
 	return c.Dispatch(ctx, opts)
 }
