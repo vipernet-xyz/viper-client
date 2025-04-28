@@ -13,13 +13,15 @@ import (
 	"github.com/illegalcall/viper-client/internal/relay"
 )
 
+// Use a hardcodd list of requestros for the free users
+
 // Constants for relay configuration
 const (
 	// Default chain parameters
 	BlockchainID         = "0002"                                                             // Ethereum
 	GeoZoneID            = "0001"                                                             // Global zone
 	ServicerCount        = 1                                                                  // Number of servicers to include
-	pubKey        string = "0507b3243eac1a905f3e8517146d34c2be90512a714226ec94f1b91d0ffb0771" //also, change in BlockchainRPC (internal/relay/client.go)
+	pubKey        string = "a2fd9b4a085b7ea11d91c15780a05e516bdd0d8b1bf57c4aeb89259506c6fc23" //also, change in BlockchainRPC (internal/relay/client.go)
 )
 
 // Signer struct for handling cryptographic signing
@@ -207,6 +209,11 @@ func main() {
 			log.Printf("Servicer %d: PublicKey=%s, URL=%s",
 				i+1, servicer.PublicKey, servicer.NodeURL)
 		}
+
+		// Add the new logging here
+		log.Printf("Raw servicer details: PublicKey=%s, URL=%s",
+			dispatchResp.Session.Servicers[0].PublicKey,
+			dispatchResp.Session.Servicers[0].NodeURL)
 
 		// Try a simple RPC query if we have a session
 		if len(dispatchResp.Session.Servicers) > 0 {

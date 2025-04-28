@@ -1,8 +1,0 @@
-2025/04/23 02:32:40 Initializing Viper Datadir
-2025/04/23 02:32:40 datadir = /Users/dhruvsharma/.viper
-http://localhost:8082/v1/private/requestorstakefee
-Enter password: 
-0001
-0002
-Can't Decrypt Using AES : cipher: message authentication failed 
-cipher: message authentication failed

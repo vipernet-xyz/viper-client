@@ -387,6 +387,15 @@ func (c *Client) BuildRelay(ctx context.Context, session *models.Session, opts O
 	// Get the first servicer
 	servicer := session.Servicers[0]
 
+	// Add validation for servicer public key and URL
+	if servicer.PublicKey == "" {
+		return nil, fmt.Errorf("servicer public key is empty, cannot build relay")
+	}
+
+	if servicer.NodeURL == "" {
+		return nil, fmt.Errorf("servicer URL is empty, cannot build relay")
+	}
+
 	// Create the payload
 	payload := &models.RelayPayload{
 		Data:    opts.Data,
@@ -585,7 +594,7 @@ func (c *Client) BlockchainRPC(ctx context.Context, blockchain, method string, p
 
 	// Create relay options
 	opts := Options{
-		PubKey:       "0507b3243eac1a905f3e8517146d34c2be90512a714226ec94f1b91d0ffb0771", // Default public key
+		PubKey:       "a2fd9b4a085b7ea11d91c15780a05e516bdd0d8b1bf57c4aeb89259506c6fc23", // Default public key
 		Blockchain:   blockchain,
 		GeoZone:      "0001", // Default geo zone
 		NumServicers: 1,      // Default number of servicers
