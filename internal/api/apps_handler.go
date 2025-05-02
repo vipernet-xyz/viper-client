@@ -58,9 +58,9 @@ func NewAppsHandler(appsService *apps.Service) *AppsHandler {
 // RegisterRoutes registers the app-related routes
 func (h *AppsHandler) RegisterRoutes(router *gin.RouterGroup) {
 	// Routes require authentication
+	router.GET("/all-apps/", h.getUserApps)
 	router.POST("/apps/", h.createApp)
 	router.GET("/apps/:id", h.getApp)
-	router.GET("/apps/", h.getUserApps)
 	router.PUT("/apps/:id", h.updateApp)
 	router.DELETE("/apps/:id", h.deleteApp)
 }

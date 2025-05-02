@@ -73,6 +73,7 @@ func main() {
 
 	// Initialize Gin router with logger middleware
 	router := gin.New()
+	router.Use(middleware.CORSMiddleware)
 
 	// Apply global middleware
 	router.Use(gin.Recovery())
@@ -102,8 +103,6 @@ func main() {
 			})
 			return
 		}
-
-		middleware.CORSMiddleware(c)
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "success",
 			"message": "Service is healthy and connected to database",
