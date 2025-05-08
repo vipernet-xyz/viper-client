@@ -13,6 +13,7 @@ import (
 	"github.com/illegalcall/viper-client/internal/db"
 	"github.com/illegalcall/viper-client/internal/middleware"
 	"github.com/illegalcall/viper-client/internal/rpc"
+	"github.com/illegalcall/viper-client/internal/stats"
 	"github.com/illegalcall/viper-client/internal/utils"
 	"go.uber.org/zap"
 )
@@ -45,8 +46,9 @@ func main() {
 	}
 	logger.Info("Database migrations completed successfully")
 
-	// Initialize apps service
+	// Initialize services
 	appsService := apps.NewService(database.DB)
+	statsService := stats.NewService(database.DB)
 
 	// Initialize RPC components
 	endpointManager := rpc.NewDBEndpointManager(database.DB)
@@ -122,8 +124,8 @@ func main() {
 	viperNetworkAPIHandler.RegisterRoutes(router)
 
 	// Initialize and register Relay handler
-	relayHandler := api.NewRelayHandler(endpointManager)
-	relayHandler.RegisterRoutes(router)
+	// relayHandler := api.NewRelayHandler(endpointManager)
+	// relayHandler.RegisterRoutes(router)
 
 	// API routes - protected by Auto Authentication middleware
 	apiGroup := router.Group("/api")
@@ -132,6 +134,10 @@ func main() {
 	// Initialize and register apps handler
 	appsHandler := api.NewAppsHandler(appsService)
 	appsHandler.RegisterRoutes(apiGroup)
+
+	// Initialize and register stats handler
+	statsHandler := api.NewStatsHandler(statsService)
+	statsHandler.RegisterRoutes(apiGroup)
 
 	// Sample protected endpoint
 	// @Summary Get user profile
