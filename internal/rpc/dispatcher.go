@@ -5,9 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/illegalcall/viper-client/internal/models"
@@ -18,13 +18,42 @@ var (
 	ErrNoEndpoints = errors.New("no active endpoints available for the requested chain")
 )
 
+// StatsLogger interface for logging RPC request statistics
+type StatsLogger interface {
+	LogRequest(chainID int, endpointID int, method string, success bool) error
+}
+
+// RPCRequest represents a JSON-RPC request
+// @Description JSON-RPC request structure
+type RPCRequest struct {
+	JSONRPC string          `json:"jsonrpc"`
+	Method  string          `json:"method"`
+	Params  json.RawMessage `json:"params"`
+	ID      interface{}     `json:"id"`
+}
+
+// RPCResponse represents a JSON-RPC response
+// @Description JSON-RPC response structure
+type RPCResponse struct {
+	JSONRPC string          `json:"jsonrpc"`
+	Result  json.RawMessage `json:"result,omitempty"`
+	Error   *RPCError       `json:"error,omitempty"`
+	ID      interface{}     `json:"id"`
+}
+
+// RPCError represents a JSON-RPC error
+// @Description JSON-RPC error structure
+type RPCError struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
+
 // Dispatcher handles forwarding RPC requests to blockchain nodes
 type Dispatcher struct {
 	endpointManager     EndpointManager
 	httpClient          *http.Client
 	viperNetworkHandler *ViperNetworkHandler
-	lock                sync.RWMutex
-	// Cache could be added here for common requests
 }
 
 // EndpointManager defines the interface for retrieving and managing RPC endpoints
@@ -44,22 +73,6 @@ func NewDispatcher(manager EndpointManager) *Dispatcher {
 		},
 		viperNetworkHandler: viperHandler,
 	}
-}
-
-// RPCRequest represents a JSON-RPC request
-type RPCRequest struct {
-	JSONRPC string      `json:"jsonrpc"`
-	Method  string      `json:"method"`
-	Params  interface{} `json:"params"`
-	ID      interface{} `json:"id"`
-}
-
-// RPCResponse represents a JSON-RPC response
-type RPCResponse struct {
-	JSONRPC string      `json:"jsonrpc"`
-	Result  interface{} `json:"result,omitempty"`
-	Error   interface{} `json:"error,omitempty"`
-	ID      interface{} `json:"id"`
 }
 
 // Forward forwards an RPC request to an available endpoint for the given chain
@@ -138,4 +151,108 @@ func (d *Dispatcher) ForwardToViperNetwork(ctx context.Context, requestBody []by
 	}
 
 	return jsonRPCResponse, nil
+}
+
+// RPCDispatcher handles RPC request dispatching
+// @Description Handles dispatching of RPC requests to appropriate endpoints
+type RPCDispatcher struct {
+	endpointManager EndpointManager
+	statsLogger     StatsLogger
+	httpClient      *http.Client
+}
+
+// NewRPCDispatcher creates a new RPC dispatcher
+func NewRPCDispatcher(em EndpointManager, sl StatsLogger) *RPCDispatcher {
+	return &RPCDispatcher{
+		endpointManager: em,
+		statsLogger:     sl,
+		httpClient: &http.Client{
+			Timeout: 30 * time.Second,
+		},
+	}
+}
+
+// DispatchRequest forwards an RPC request to the appropriate endpoint
+// @Summary Dispatch RPC request
+// @Description Forwards an RPC request to the appropriate endpoint based on chain ID and geolocation
+// @Tags RPC
+// @Accept json
+// @Produce json
+// @Param chainID path int true "Chain ID"
+// @Param request body RPCRequest true "RPC request"
+// @Success 200 {object} RPCResponse "RPC response"
+// @Failure 400 {object} ErrorResponse "Invalid request"
+// @Failure 404 {object} ErrorResponse "No active endpoints found"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /rpc/{chainID} [post]
+func (d *RPCDispatcher) DispatchRequest(chainID int, request *RPCRequest) (*RPCResponse, error) {
+	// Get active endpoints for the chain
+	endpoints, err := d.endpointManager.GetActiveEndpoints(chainID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get endpoints: %w", err)
+	}
+
+	if len(endpoints) == 0 {
+		return nil, fmt.Errorf("no active endpoints found for chain ID %d", chainID)
+	}
+
+	// Try each endpoint in order of priority
+	var lastErr error
+	for _, endpoint := range endpoints {
+		response, err := d.tryEndpoint(endpoint, request)
+		if err == nil {
+			// Log successful request
+			if err := d.statsLogger.LogRequest(chainID, endpoint.ID, request.Method, true); err != nil {
+				// Log error but don't fail the request
+				fmt.Printf("Failed to log request stats: %v\n", err)
+			}
+			return response, nil
+		}
+		lastErr = err
+	}
+
+	return nil, fmt.Errorf("all endpoints failed: %w", lastErr)
+}
+
+// tryEndpoint attempts to send the request to a specific endpoint
+func (d *RPCDispatcher) tryEndpoint(endpoint models.RpcEndpoint, request *RPCRequest) (*RPCResponse, error) {
+	// Marshal request body
+	requestBody, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	// Create HTTP request
+	req, err := http.NewRequest("POST", endpoint.EndpointURL, bytes.NewBuffer(requestBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send request
+	resp, err := d.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	// Parse response
+	var rpcResp RPCResponse
+	if err := json.Unmarshal(body, &rpcResp); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	// Check for RPC error
+	if rpcResp.Error != nil {
+		return nil, fmt.Errorf("RPC error: %s", rpcResp.Error.Message)
+	}
+
+	return &rpcResp, nil
 }

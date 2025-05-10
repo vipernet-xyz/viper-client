@@ -379,3 +379,46 @@ func generateAppIdentifier(userID int, appName string) string {
 	hash := sha256.Sum256(data)
 	return hex.EncodeToString(hash[:])[:64] // Truncate to 64 chars
 }
+
+// GetAppByAPIKey retrieves an app by its API key
+func (s *Service) GetAppByAPIKey(apiKey string) (*models.App, error) {
+	// Hash the API key for comparison
+	apiKeyHash := s.HashAPIKey(apiKey)
+
+	query := `
+		SELECT id, app_identifier, user_id, name, description, allowed_origins, allowed_chains, 
+		       api_key_hash, rate_limit, created_at, updated_at
+		FROM apps
+		WHERE api_key_hash = $1
+	`
+
+	var app models.App
+	var description sql.NullString
+
+	err := s.db.QueryRow(query, apiKeyHash).Scan(
+		&app.ID,
+		&app.AppIdentifier,
+		&app.UserID,
+		&app.Name,
+		&description,
+		pq.Array(&app.AllowedOrigins),
+		&app.AllowedChains,
+		&app.APIKeyHash,
+		&app.RateLimit,
+		&app.CreatedAt,
+		&app.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("app not found")
+		}
+		return nil, err
+	}
+
+	if description.Valid {
+		app.Description = description.String
+	}
+
+	return &app, nil
+}

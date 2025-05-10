@@ -8,6 +8,7 @@ import (
 )
 
 // DBEndpointManager manages RPC endpoints using a database
+// @Description Manages RPC endpoints for blockchain networks
 type DBEndpointManager struct {
 	db *sql.DB
 }
@@ -20,12 +21,21 @@ func NewDBEndpointManager(db *sql.DB) *DBEndpointManager {
 }
 
 // GetActiveEndpoints returns all active endpoints for a given chain ID, sorted by priority
+// @Summary Get active endpoints
+// @Description Retrieves all active RPC endpoints for a specific chain ID, filtered by Indian geolocation
+// @Tags RPC
+// @Accept json
+// @Produce json
+// @Param chainID path int true "Chain ID"
+// @Success 200 {array} models.RpcEndpoint "List of active endpoints"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /internal/rpc/endpoints/{chainID} [get]
 func (em *DBEndpointManager) GetActiveEndpoints(chainID int) ([]models.RpcEndpoint, error) {
 	query := `
 		SELECT id, chain_id, endpoint_url, provider, is_active, priority, 
 		       health_check_timestamp, health_status, created_at, updated_at
 		FROM rpc_endpoints
-		WHERE chain_id = $1 AND is_active = true
+		WHERE chain_id = $1 AND is_active = true AND geozone = 'IND'
 		ORDER BY priority DESC
 	`
 
@@ -79,6 +89,16 @@ func (em *DBEndpointManager) GetActiveEndpoints(chainID int) ([]models.RpcEndpoi
 }
 
 // UpdateEndpointHealth updates the health status of an endpoint
+// @Summary Update endpoint health
+// @Description Updates the health status of an RPC endpoint
+// @Tags RPC
+// @Accept json
+// @Produce json
+// @Param id path int true "Endpoint ID"
+// @Param status body string true "Health status"
+// @Success 200 {object} SuccessResponse "Health status updated"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /internal/rpc/endpoints/{id}/health [put]
 func (em *DBEndpointManager) UpdateEndpointHealth(id int, status string) error {
 	query := `
 		UPDATE rpc_endpoints
@@ -89,4 +109,14 @@ func (em *DBEndpointManager) UpdateEndpointHealth(id int, status string) error {
 	now := time.Now()
 	_, err := em.db.Exec(query, status, now, id)
 	return err
+}
+
+// ErrorResponse represents an error response
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
+// SuccessResponse represents a success response
+type SuccessResponse struct {
+	Message string `json:"message"`
 }
