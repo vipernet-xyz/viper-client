@@ -10,6 +10,7 @@ import (
 	"github.com/illegalcall/viper-client/docs"
 	"github.com/illegalcall/viper-client/internal/api"
 	"github.com/illegalcall/viper-client/internal/apps"
+	"github.com/illegalcall/viper-client/internal/chains"
 	"github.com/illegalcall/viper-client/internal/db"
 	"github.com/illegalcall/viper-client/internal/middleware"
 	"github.com/illegalcall/viper-client/internal/rpc"
@@ -49,6 +50,7 @@ func main() {
 	// Initialize services
 	appsService := apps.NewService(database.DB)
 	statsService := stats.NewService(database.DB)
+	chainsService := chains.NewService(database.DB)
 
 	// Initialize RPC components
 	endpointManager := rpc.NewDBEndpointManager(database.DB)
@@ -138,6 +140,10 @@ func main() {
 	// Initialize and register stats handler
 	statsHandler := api.NewStatsHandler(statsService)
 	statsHandler.RegisterRoutes(apiGroup)
+
+	// Initialize and register chains handler
+	chainsHandler := api.NewChainsHandler(chainsService)
+	chainsHandler.RegisterRoutes(apiGroup)
 
 	// Sample protected endpoint
 	// @Summary Get user profile
