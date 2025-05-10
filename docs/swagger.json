@@ -588,6 +588,479 @@
           }
         }
       }
+    },
+    "/api/chains": {
+      "get": {
+        "description": "Retrieves all supported blockchain networks",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Chains"
+        ],
+        "summary": "Get all chains",
+        "responses": {
+          "200": {
+            "description": "List of chains",
+            "schema": {
+              "$ref": "#/definitions/api.ChainsResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/chains/{id}": {
+      "get": {
+        "description": "Retrieves a specific chain by its database ID",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Chains"
+        ],
+        "summary": "Get chain by ID",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "Chain ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chain details",
+            "schema": {
+              "$ref": "#/definitions/api.ChainResponse"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/chains/by-chain-id/{chain_id}": {
+      "get": {
+        "description": "Retrieves a specific chain by its chain ID (e.g., 1 for Viper Network)",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Chains"
+        ],
+        "summary": "Get chain by chain ID",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "Chain ID (e.g., 1 for Viper Network)",
+            "name": "chain_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chain details",
+            "schema": {
+              "$ref": "#/definitions/api.ChainResponse"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/chains/network-type/{network_type}": {
+      "get": {
+        "description": "Retrieves chains by their network type (mainnet/testnet)",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Chains"
+        ],
+        "summary": "Get chains by network type",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Network type (mainnet/testnet)",
+            "name": "network_type",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of chains",
+            "schema": {
+              "$ref": "#/definitions/api.ChainsResponse"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/chains/evm": {
+      "get": {
+        "description": "Retrieves all EVM-compatible chains",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Chains"
+        ],
+        "summary": "Get EVM chains",
+        "responses": {
+          "200": {
+            "description": "List of EVM chains",
+            "schema": {
+              "$ref": "#/definitions/api.ChainsResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/stats": {
+      "post": {
+        "description": "Retrieves aggregated statistics based on filter parameters",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Stats"
+        ],
+        "summary": "Get statistics",
+        "parameters": [
+          {
+            "description": "Statistics filter parameters",
+            "name": "filter",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/api.StatsFilter"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistics data",
+            "schema": {
+              "$ref": "#/definitions/api.StatsResponse"
+            }
+          },
+          "400": {
+            "description": "Invalid filter parameters",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/stats/api-key/{apiKey}/{chainID}": {
+      "get": {
+        "description": "Retrieves statistics for a specific API key on a specific chain",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Stats"
+        ],
+        "summary": "Get API key statistics",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "API Key",
+            "name": "apiKey",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "description": "Chain ID",
+            "name": "chainID",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Time interval (1hour, 4hour, 6hour, 12hour, 24hour)",
+            "name": "interval",
+            "in": "query",
+            "default": "1hour"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "API key statistics",
+            "schema": {
+              "$ref": "#/definitions/api.StatsResponse"
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/stats/chain/{chainID}": {
+      "get": {
+        "description": "Retrieves statistics for a specific chain",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Stats"
+        ],
+        "summary": "Get chain statistics",
+        "parameters": [
+          {
+            "type": "integer",
+            "description": "Chain ID",
+            "name": "chainID",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Time interval (1hour, 4hour, 6hour, 12hour, 24hour)",
+            "name": "interval",
+            "in": "query",
+            "default": "1hour"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chain statistics",
+            "schema": {
+              "$ref": "#/definitions/api.StatsResponse"
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/stats/endpoint/{endpoint}/{chainID}": {
+      "get": {
+        "description": "Retrieves statistics for a specific endpoint on a specific chain",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Stats"
+        ],
+        "summary": "Get endpoint statistics",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Endpoint",
+            "name": "endpoint",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "description": "Chain ID",
+            "name": "chainID",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Time interval (1hour, 4hour, 6hour, 12hour, 24hour)",
+            "name": "interval",
+            "in": "query",
+            "default": "1hour"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Endpoint statistics",
+            "schema": {
+              "$ref": "#/definitions/api.StatsResponse"
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/relay": {
+      "post": {
+        "description": "Forwards an RPC request to the appropriate blockchain node",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Relay"
+        ],
+        "summary": "Relay RPC request",
+        "parameters": [
+          {
+            "description": "RPC request to relay",
+            "name": "request",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/api.RelayRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "RPC response from the blockchain node",
+            "schema": {
+              "$ref": "#/definitions/api.RelayResponse"
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Invalid API key",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "403": {
+            "description": "Chain not allowed for this app",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/api.ErrorResponse"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -918,6 +1391,161 @@
           "$ref": "#/definitions/api.UserInfo"
         }
       }
+    },
+    "api.ChainResponse": {
+      "type": "object",
+      "description": "Response data for chain operations",
+      "properties": {
+        "chain": {
+          "description": "The chain object",
+          "type": "object"
+        }
+      }
+    },
+    "api.ChainsResponse": {
+      "type": "object",
+      "description": "Response data for multiple chains",
+      "properties": {
+        "chains": {
+          "description": "List of chains",
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "api.StatsFilter": {
+      "type": "object",
+      "description": "Filter parameters for statistics queries",
+      "properties": {
+        "chain_id": {
+          "type": "integer",
+          "description": "Chain ID",
+          "example": 1
+        },
+        "api_key": {
+          "type": "string",
+          "description": "API Key",
+          "example": "your-api-key-here"
+        },
+        "start_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Start date for statistics",
+          "example": "2024-03-20T00:00:00Z"
+        },
+        "end_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "End date for statistics",
+          "example": "2024-03-21T00:00:00Z"
+        },
+        "interval": {
+          "type": "string",
+          "description": "Time interval (1hour, 4hour, 6hour, 12hour, 24hour)",
+          "example": "1hour"
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "Endpoint name",
+          "example": "eth_blockNumber"
+        },
+        "endpoint_id": {
+          "type": "string",
+          "description": "Endpoint ID",
+          "example": "endpoint-123"
+        }
+      }
+    },
+    "api.StatsResponse": {
+      "type": "object",
+      "description": "Response containing statistics data",
+      "properties": {
+        "stats": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/api.LogStats"
+          }
+        }
+      }
+    },
+    "api.LogStats": {
+      "type": "object",
+      "description": "Statistics entry for a specific time period",
+      "properties": {
+        "period": {
+          "type": "string",
+          "format": "date-time",
+          "example": "2024-03-20T10:00:00Z"
+        },
+        "count": {
+          "type": "integer",
+          "example": 150
+        },
+        "chain_id": {
+          "type": "integer",
+          "example": 1
+        },
+        "endpoint": {
+          "type": "string",
+          "example": "eth_blockNumber"
+        },
+        "api_key": {
+          "type": "string",
+          "example": "your-api-key-here"
+        },
+        "endpoint_id": {
+          "type": "string",
+          "example": "endpoint-123"
+        }
+      }
+    },
+    "api.RelayRequest": {
+      "type": "object",
+      "required": [
+        "api_key",
+        "chain_id",
+        "request"
+      ],
+      "description": "Request structure for relaying an RPC call",
+      "properties": {
+        "api_key": {
+          "type": "string",
+          "description": "API Key for authentication",
+          "example": "your-api-key-here"
+        },
+        "chain_id": {
+          "type": "integer",
+          "description": "Chain ID to relay the request to",
+          "example": 1
+        },
+        "request": {
+          "type": "object",
+          "description": "JSON-RPC request to relay",
+          "example": {
+            "jsonrpc": "2.0",
+            "method": "eth_blockNumber",
+            "params": [],
+            "id": 1
+          }
+        }
+      }
+    },
+    "api.RelayResponse": {
+      "type": "object",
+      "description": "Response structure from the relay service",
+      "properties": {
+        "response": {
+          "type": "object",
+          "description": "JSON-RPC response from the blockchain node",
+          "example": {
+            "jsonrpc": "2.0",
+            "result": "0x1234",
+            "id": 1
+          }
+        }
+      }
     }
   },
   "securityDefinitions": {
@@ -950,6 +1578,18 @@
     {
       "description": "Health check endpoint",
       "name": "Health"
+    },
+    {
+      "description": "Blockchain chain management endpoints",
+      "name": "Chains"
+    },
+    {
+      "description": "Statistics and usage tracking endpoints",
+      "name": "Stats"
+    },
+    {
+      "description": "RPC request relay endpoints",
+      "name": "Relay"
     }
   ]
 } 

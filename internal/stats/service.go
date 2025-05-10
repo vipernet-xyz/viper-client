@@ -7,6 +7,7 @@ import (
 )
 
 // Service provides functionality for retrieving usage statistics
+// @Description Manages and retrieves usage statistics for RPC requests
 type Service struct {
 	db *sql.DB
 }
@@ -19,32 +20,45 @@ func NewService(db *sql.DB) *Service {
 }
 
 // LogStats represents a single statistics entry
+// @Description Statistics entry for a specific time period
 type LogStats struct {
-	Period     string `json:"period"`
-	Count      int    `json:"count"`
-	ChainID    int    `json:"chain_id"`
-	Endpoint   string `json:"endpoint,omitempty"`
-	APIKey     string `json:"api_key,omitempty"`
-	EndpointID string `json:"endpoint_id,omitempty"`
+	Period     string `json:"period" example:"2024-03-20T10:00:00Z"`
+	Count      int    `json:"count" example:"150"`
+	ChainID    int    `json:"chain_id" example:"1"`
+	Endpoint   string `json:"endpoint,omitempty" example:"eth_blockNumber"`
+	APIKey     string `json:"api_key,omitempty" example:"your-api-key-here"`
+	EndpointID string `json:"endpoint_id,omitempty" example:"endpoint-123"`
 }
 
 // StatsResponse is the response for statistics queries
+// @Description Response containing statistics data
 type StatsResponse struct {
 	Stats []LogStats `json:"stats"`
 }
 
 // StatsFilter is used to filter statistics queries
+// @Description Filter parameters for statistics queries
 type StatsFilter struct {
-	ChainID    int
-	APIKey     string
-	StartDate  time.Time
-	EndDate    time.Time
-	Interval   string // "1hour", "4hour", "6hour", "12hour", "24hour"
-	Endpoint   string
-	EndpointID string
+	ChainID    int       `json:"chain_id,omitempty" example:"1"`
+	APIKey     string    `json:"api_key,omitempty" example:"your-api-key-here"`
+	StartDate  time.Time `json:"start_date,omitempty" example:"2024-03-20T00:00:00Z"`
+	EndDate    time.Time `json:"end_date,omitempty" example:"2024-03-21T00:00:00Z"`
+	Interval   string    `json:"interval,omitempty" example:"1hour"` // "1hour", "4hour", "6hour", "12hour", "24hour"
+	Endpoint   string    `json:"endpoint,omitempty" example:"eth_blockNumber"`
+	EndpointID string    `json:"endpoint_id,omitempty" example:"endpoint-123"`
 }
 
 // GetStats retrieves aggregated statistics based on the provided filter
+// @Summary Get statistics
+// @Description Retrieves aggregated statistics based on filter parameters
+// @Tags Stats
+// @Accept json
+// @Produce json
+// @Param filter body StatsFilter true "Statistics filter parameters"
+// @Success 200 {object} StatsResponse "Statistics data"
+// @Failure 400 {object} ErrorResponse "Invalid filter parameters"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /api/stats [post]
 func (s *Service) GetStats(filter StatsFilter) ([]LogStats, error) {
 	// Base query
 	baseQuery := `
@@ -153,6 +167,18 @@ func (s *Service) GetStats(filter StatsFilter) ([]LogStats, error) {
 }
 
 // GetAPIKeyStats retrieves statistics for a specific API key
+// @Summary Get API key statistics
+// @Description Retrieves statistics for a specific API key on a specific chain
+// @Tags Stats
+// @Accept json
+// @Produce json
+// @Param apiKey path string true "API Key"
+// @Param chainID path int true "Chain ID"
+// @Param interval query string false "Time interval (1hour, 4hour, 6hour, 12hour, 24hour)" default(1hour)
+// @Success 200 {object} StatsResponse "API key statistics"
+// @Failure 400 {object} ErrorResponse "Invalid parameters"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /api/stats/api-key/{apiKey}/{chainID} [get]
 func (s *Service) GetAPIKeyStats(apiKey string, chainID int, interval string) ([]LogStats, error) {
 	filter := StatsFilter{
 		APIKey:   apiKey,
@@ -163,6 +189,17 @@ func (s *Service) GetAPIKeyStats(apiKey string, chainID int, interval string) ([
 }
 
 // GetChainStats retrieves statistics for a specific chain
+// @Summary Get chain statistics
+// @Description Retrieves statistics for a specific chain
+// @Tags Stats
+// @Accept json
+// @Produce json
+// @Param chainID path int true "Chain ID"
+// @Param interval query string false "Time interval (1hour, 4hour, 6hour, 12hour, 24hour)" default(1hour)
+// @Success 200 {object} StatsResponse "Chain statistics"
+// @Failure 400 {object} ErrorResponse "Invalid parameters"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /api/stats/chain/{chainID} [get]
 func (s *Service) GetChainStats(chainID int, interval string) ([]LogStats, error) {
 	filter := StatsFilter{
 		ChainID:  chainID,
@@ -172,6 +209,18 @@ func (s *Service) GetChainStats(chainID int, interval string) ([]LogStats, error
 }
 
 // GetEndpointStats retrieves statistics for a specific endpoint
+// @Summary Get endpoint statistics
+// @Description Retrieves statistics for a specific endpoint on a specific chain
+// @Tags Stats
+// @Accept json
+// @Produce json
+// @Param endpoint path string true "Endpoint"
+// @Param chainID path int true "Chain ID"
+// @Param interval query string false "Time interval (1hour, 4hour, 6hour, 12hour, 24hour)" default(1hour)
+// @Success 200 {object} StatsResponse "Endpoint statistics"
+// @Failure 400 {object} ErrorResponse "Invalid parameters"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /api/stats/endpoint/{endpoint}/{chainID} [get]
 func (s *Service) GetEndpointStats(endpoint string, chainID int, interval string) ([]LogStats, error) {
 	filter := StatsFilter{
 		Endpoint: endpoint,
@@ -179,4 +228,9 @@ func (s *Service) GetEndpointStats(endpoint string, chainID int, interval string
 		Interval: interval,
 	}
 	return s.GetStats(filter)
+}
+
+// ErrorResponse represents an error response
+type ErrorResponse struct {
+	Error string `json:"error" example:"Invalid parameters"`
 }

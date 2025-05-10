@@ -1,0 +1,488 @@
+openapi: 3.0.0
+info:
+  title: Viper Network API
+  description: API for interacting with Viper Network services
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+paths:
+  /api/chains:
+    get:
+      summary: Get all chains
+      description: Retrieves all supported blockchain networks
+      tags:
+        - Chains
+      responses:
+        '200':
+          description: List of chains
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChainsResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/chains/{id}:
+    get:
+      summary: Get chain by ID
+      description: Retrieves a specific chain by its database ID
+      tags:
+        - Chains
+      parameters:
+        - name: id
+          in: path
+          description: Chain ID
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Chain details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChainResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/chains/by-chain-id/{chain_id}:
+    get:
+      summary: Get chain by chain ID
+      description: Retrieves a specific chain by its chain ID (e.g., 1 for Viper Network)
+      tags:
+        - Chains
+      parameters:
+        - name: chain_id
+          in: path
+          description: Chain ID (e.g., 1 for Viper Network)
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Chain details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChainResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/chains/network-type/{network_type}:
+    get:
+      summary: Get chains by network type
+      description: Retrieves chains by their network type (mainnet/testnet)
+      tags:
+        - Chains
+      parameters:
+        - name: network_type
+          in: path
+          description: Network type (mainnet/testnet)
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of chains
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChainsResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/chains/evm:
+    get:
+      summary: Get EVM chains
+      description: Retrieves all EVM-compatible chains
+      tags:
+        - Chains
+      responses:
+        '200':
+          description: List of EVM chains
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChainsResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/stats:
+    post:
+      summary: Get statistics
+      description: Retrieves aggregated statistics based on filter parameters
+      tags:
+        - Stats
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatsFilter'
+      responses:
+        '200':
+          description: Statistics data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsResponse'
+        '400':
+          description: Invalid filter parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/stats/api-key/{apiKey}/{chainID}:
+    get:
+      summary: Get API key statistics
+      description: Retrieves statistics for a specific API key on a specific chain
+      tags:
+        - Stats
+      parameters:
+        - name: apiKey
+          in: path
+          description: API Key
+          required: true
+          schema:
+            type: string
+        - name: chainID
+          in: path
+          description: Chain ID
+          required: true
+          schema:
+            type: integer
+        - name: interval
+          in: query
+          description: Time interval (1hour, 4hour, 6hour, 12hour, 24hour)
+          schema:
+            type: string
+            default: "1hour"
+      responses:
+        '200':
+          description: API key statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsResponse'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/stats/chain/{chainID}:
+    get:
+      summary: Get chain statistics
+      description: Retrieves statistics for a specific chain
+      tags:
+        - Stats
+      parameters:
+        - name: chainID
+          in: path
+          description: Chain ID
+          required: true
+          schema:
+            type: integer
+        - name: interval
+          in: query
+          description: Time interval (1hour, 4hour, 6hour, 12hour, 24hour)
+          schema:
+            type: string
+            default: "1hour"
+      responses:
+        '200':
+          description: Chain statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsResponse'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/stats/endpoint/{endpoint}/{chainID}:
+    get:
+      summary: Get endpoint statistics
+      description: Retrieves statistics for a specific endpoint on a specific chain
+      tags:
+        - Stats
+      parameters:
+        - name: endpoint
+          in: path
+          description: Endpoint
+          required: true
+          schema:
+            type: string
+        - name: chainID
+          in: path
+          description: Chain ID
+          required: true
+          schema:
+            type: integer
+        - name: interval
+          in: query
+          description: Time interval (1hour, 4hour, 6hour, 12hour, 24hour)
+          schema:
+            type: string
+            default: "1hour"
+      responses:
+        '200':
+          description: Endpoint statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsResponse'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/relay:
+    post:
+      summary: Relay RPC request
+      description: Forwards an RPC request to the appropriate blockchain node
+      tags:
+        - Relay
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RelayRequest'
+      responses:
+        '200':
+          description: RPC response from the blockchain node
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelayResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Chain not allowed for this app
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ChainResponse:
+      type: object
+      description: Response data for chain operations
+      properties:
+        chain:
+          description: The chain object
+          type: object
+    ChainsResponse:
+      type: object
+      description: Response data for multiple chains
+      properties:
+        chains:
+          description: List of chains
+          type: array
+          items:
+            type: object
+    StatsFilter:
+      type: object
+      description: Filter parameters for statistics queries
+      properties:
+        chain_id:
+          type: integer
+          description: Chain ID
+          example: 1
+        api_key:
+          type: string
+          description: API Key
+          example: "your-api-key-here"
+        start_date:
+          type: string
+          format: date-time
+          description: Start date for statistics
+          example: "2024-03-20T00:00:00Z"
+        end_date:
+          type: string
+          format: date-time
+          description: End date for statistics
+          example: "2024-03-21T00:00:00Z"
+        interval:
+          type: string
+          description: Time interval (1hour, 4hour, 6hour, 12hour, 24hour)
+          example: "1hour"
+        endpoint:
+          type: string
+          description: Endpoint name
+          example: "eth_blockNumber"
+        endpoint_id:
+          type: string
+          description: Endpoint ID
+          example: "endpoint-123"
+    StatsResponse:
+      type: object
+      description: Response containing statistics data
+      properties:
+        stats:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogStats'
+    LogStats:
+      type: object
+      description: Statistics entry for a specific time period
+      properties:
+        period:
+          type: string
+          format: date-time
+          example: "2024-03-20T10:00:00Z"
+        count:
+          type: integer
+          example: 150
+        chain_id:
+          type: integer
+          example: 1
+        endpoint:
+          type: string
+          example: "eth_blockNumber"
+        api_key:
+          type: string
+          example: "your-api-key-here"
+        endpoint_id:
+          type: string
+          example: "endpoint-123"
+    RelayRequest:
+      type: object
+      required:
+        - api_key
+        - chain_id
+        - request
+      description: Request structure for relaying an RPC call
+      properties:
+        api_key:
+          type: string
+          description: API Key for authentication
+          example: "your-api-key-here"
+        chain_id:
+          type: integer
+          description: Chain ID to relay the request to
+          example: 1
+        request:
+          type: object
+          description: JSON-RPC request to relay
+          example:
+            jsonrpc: "2.0"
+            method: "eth_blockNumber"
+            params: []
+            id: 1
+    RelayResponse:
+      type: object
+      description: Response structure from the relay service
+      properties:
+        response:
+          type: object
+          description: JSON-RPC response from the blockchain node
+          example:
+            jsonrpc: "2.0"
+            result: "0x1234"
+            id: 1
+  tags:
+    - name: Authentication
+      description: User authentication endpoints
+    - name: Apps
+      description: Application management endpoints
+    - name: RPC
+      description: RPC forwarding endpoints
+    - name: Health
+      description: Health check endpoint
+    - name: Chains
+      description: Blockchain chain management endpoints
+    - name: Stats
+      description: Statistics and usage tracking endpoints
+    - name: Relay
+      description: RPC request relay endpoints 

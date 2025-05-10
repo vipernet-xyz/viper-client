@@ -14,6 +14,7 @@ import (
 )
 
 // Service provides functionality for relaying RPC requests
+// @Description Handles relaying of RPC requests to appropriate blockchain nodes
 type Service struct {
 	db            *sql.DB
 	appsService   *apps.Service
@@ -34,18 +35,37 @@ func NewService(db *sql.DB, appsService *apps.Service, rpcDispatcher *rpc.Dispat
 }
 
 // RelayRequest represents the request to relay an RPC call
+// @Description Request structure for relaying an RPC call
 type RelayRequest struct {
-	APIKey  string          `json:"api_key"`
-	ChainID int             `json:"chain_id"`
-	Request json.RawMessage `json:"request"`
+	APIKey  string          `json:"api_key" binding:"required" example:"your-api-key-here"`
+	ChainID int             `json:"chain_id" binding:"required" example:"1"`
+	Request json.RawMessage `json:"request" binding:"required" example:"{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}"`
 }
 
 // RelayResponse represents the response from the relay service
+// @Description Response structure from the relay service
 type RelayResponse struct {
-	Response json.RawMessage `json:"response"`
+	Response json.RawMessage `json:"response" example:"{\"jsonrpc\":\"2.0\",\"result\":\"0x1234\",\"id\":1}"`
+}
+
+// ErrorResponse represents an error response
+type ErrorResponse struct {
+	Error string `json:"error" example:"Invalid API key"`
 }
 
 // Relay forwards an RPC request to the appropriate endpoint
+// @Summary Relay RPC request
+// @Description Forwards an RPC request to the appropriate blockchain node
+// @Tags Relay
+// @Accept json
+// @Produce json
+// @Param request body RelayRequest true "RPC request to relay"
+// @Success 200 {object} RelayResponse "RPC response from the blockchain node"
+// @Failure 400 {object} ErrorResponse "Invalid request"
+// @Failure 401 {object} ErrorResponse "Invalid API key"
+// @Failure 403 {object} ErrorResponse "Chain not allowed for this app"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /api/relay [post]
 func (s *Service) Relay(ctx context.Context, req RelayRequest) (*RelayResponse, error) {
 	// 1. Verify API key
 	app, err := s.verifyAPIKey(req.APIKey)
