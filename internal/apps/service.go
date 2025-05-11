@@ -2,13 +2,9 @@ package apps
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
-	"encoding/hex"
 	"errors"
-	"fmt"
-	"time"
 
 	"github.com/illegalcall/viper-client/internal/models"
 	"github.com/lib/pq"
@@ -54,23 +50,14 @@ func (s *Service) GenerateAPIKey() (string, error) {
 	return base64.URLEncoding.EncodeToString(bytes), nil
 }
 
-// HashAPIKey creates a SHA-256 hash of the API key for storage
-func (s *Service) HashAPIKey(apiKey string) string {
-	hash := sha256.Sum256([]byte(apiKey))
-	return hex.EncodeToString(hash[:])
-}
-
 // CreateApp creates a new decentralized application
 func (s *Service) CreateApp(req CreateAppRequest) (*CreateAppResponse, error) {
-	// Generate app identifier
-	appIdentifier := generateAppIdentifier(req.UserID, req.Name)
 
 	// Generate API key and hash
 	apiKey, err := s.GenerateAPIKey()
 	if err != nil {
 		return nil, err
 	}
-	apiKeyHash := s.HashAPIKey(apiKey)
 
 	// Default rate limit if not specified
 	rateLimit := 10000
@@ -83,30 +70,28 @@ func (s *Service) CreateApp(req CreateAppRequest) (*CreateAppResponse, error) {
 	defer tx.Rollback()
 
 	query := `
-		INSERT INTO apps (app_identifier, user_id, name, description, allowed_origins, allowed_chains, api_key_hash, rate_limit)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO apps (api_key, user_id, name, description, allowed_origins, allowed_chains, rate_limit)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, created_at, updated_at
 	`
 
 	var app models.App
-	app.AppIdentifier = appIdentifier
+	app.APIKey = apiKey
 	app.UserID = req.UserID
 	app.Name = req.Name
 	app.Description = req.Description
 	app.AllowedOrigins = req.AllowedOrigins
 	app.AllowedChains = models.IntArray(req.AllowedChains)
-	app.APIKeyHash = apiKeyHash
 	app.RateLimit = rateLimit
 
 	err = tx.QueryRow(
 		query,
-		app.AppIdentifier,
+		app.APIKey,
 		app.UserID,
 		app.Name,
 		app.Description,
 		pq.Array(app.AllowedOrigins),
 		app.AllowedChains,
-		app.APIKeyHash,
 		app.RateLimit,
 	).Scan(&app.ID, &app.CreatedAt, &app.UpdatedAt)
 
@@ -128,8 +113,8 @@ func (s *Service) CreateApp(req CreateAppRequest) (*CreateAppResponse, error) {
 // GetApp retrieves an app by its ID
 func (s *Service) GetApp(id int) (*models.App, error) {
 	query := `
-		SELECT id, app_identifier, user_id, name, description, allowed_origins, allowed_chains, 
-		       api_key_hash, rate_limit, created_at, updated_at
+		SELECT id, api_key, user_id, name, description, allowed_origins, allowed_chains, 
+		       rate_limit, created_at, updated_at
 		FROM apps
 		WHERE id = $1
 	`
@@ -139,13 +124,12 @@ func (s *Service) GetApp(id int) (*models.App, error) {
 
 	err := s.db.QueryRow(query, id).Scan(
 		&app.ID,
-		&app.AppIdentifier,
+		&app.APIKey,
 		&app.UserID,
 		&app.Name,
 		&description,
 		pq.Array(&app.AllowedOrigins),
 		&app.AllowedChains,
-		&app.APIKeyHash,
 		&app.RateLimit,
 		&app.CreatedAt,
 		&app.UpdatedAt,
@@ -168,8 +152,8 @@ func (s *Service) GetApp(id int) (*models.App, error) {
 // GetAppsByUserID retrieves all apps belonging to a user
 func (s *Service) GetAppsByUserID(userID int) ([]models.App, error) {
 	query := `
-		SELECT id, app_identifier, user_id, name, description, allowed_origins, allowed_chains, 
-		       api_key_hash, rate_limit, created_at, updated_at
+		SELECT id, api_key, user_id, name, description, allowed_origins, allowed_chains, 
+		       rate_limit, created_at, updated_at
 		FROM apps
 		WHERE user_id = $1
 		ORDER BY created_at DESC
@@ -188,13 +172,12 @@ func (s *Service) GetAppsByUserID(userID int) ([]models.App, error) {
 
 		err := rows.Scan(
 			&app.ID,
-			&app.AppIdentifier,
+			&app.APIKey,
 			&app.UserID,
 			&app.Name,
 			&description,
 			pq.Array(&app.AllowedOrigins),
 			&app.AllowedChains,
-			&app.APIKeyHash,
 			&app.RateLimit,
 			&app.CreatedAt,
 			&app.UpdatedAt,
@@ -270,8 +253,8 @@ func (s *Service) UpdateApp(id int, userID int, req UpdateAppRequest) (*models.A
 		SET name = $1, description = $2, allowed_origins = $3, allowed_chains = $4, 
 		    rate_limit = $5, updated_at = NOW()
 		WHERE id = $6 AND user_id = $7
-		RETURNING id, app_identifier, user_id, name, description, allowed_origins, allowed_chains, 
-		         api_key_hash, rate_limit, created_at, updated_at
+		RETURNING id, api_key, user_id, name, description, allowed_origins, allowed_chains, 
+		         rate_limit, created_at, updated_at
 	`
 
 	var updatedApp models.App
@@ -288,13 +271,12 @@ func (s *Service) UpdateApp(id int, userID int, req UpdateAppRequest) (*models.A
 		userID,
 	).Scan(
 		&updatedApp.ID,
-		&updatedApp.AppIdentifier,
+		&updatedApp.APIKey,
 		&updatedApp.UserID,
 		&updatedApp.Name,
 		&dbDescription,
 		pq.Array(&updatedApp.AllowedOrigins),
 		&updatedApp.AllowedChains,
-		&updatedApp.APIKeyHash,
 		&updatedApp.RateLimit,
 		&updatedApp.CreatedAt,
 		&updatedApp.UpdatedAt,
@@ -350,15 +332,15 @@ func (s *Service) DeleteApp(id int, userID int) error {
 }
 
 // ValidateAPIKey validates an API key against the stored hash
-func (s *Service) ValidateAPIKey(appIdentifier, apiKey string) (bool, error) {
+func (s *Service) ValidateAPIKey(apiKey string) (bool, error) {
 	query := `
-		SELECT api_key_hash
+		SELECT 1
 		FROM apps
-		WHERE app_identifier = $1
+		WHERE api_key = $1
 	`
 
-	var storedHash string
-	err := s.db.QueryRow(query, appIdentifier).Scan(&storedHash)
+	var exists bool
+	err := s.db.QueryRow(query, apiKey).Scan(&exists)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false, nil
@@ -366,44 +348,29 @@ func (s *Service) ValidateAPIKey(appIdentifier, apiKey string) (bool, error) {
 		return false, err
 	}
 
-	// Compare the hash of the provided API key with the stored hash
-	calculatedHash := s.HashAPIKey(apiKey)
-	return calculatedHash == storedHash, nil
-}
-
-// Helper function to generate a unique app identifier
-func generateAppIdentifier(userID int, appName string) string {
-	// Simple implementation: combine userID, appName, and timestamp
-	timestamp := time.Now().UnixNano()
-	data := []byte(fmt.Sprintf("%s-%d-%d", appName, userID, timestamp))
-	hash := sha256.Sum256(data)
-	return hex.EncodeToString(hash[:])[:64] // Truncate to 64 chars
+	return exists, nil
 }
 
 // GetAppByAPIKey retrieves an app by its API key
 func (s *Service) GetAppByAPIKey(apiKey string) (*models.App, error) {
-	// Hash the API key for comparison
-	apiKeyHash := s.HashAPIKey(apiKey)
-
 	query := `
-		SELECT id, app_identifier, user_id, name, description, allowed_origins, allowed_chains, 
-		       api_key_hash, rate_limit, created_at, updated_at
+		SELECT id, api_key, user_id, name, description, allowed_origins, allowed_chains, 
+		       rate_limit, created_at, updated_at
 		FROM apps
-		WHERE api_key_hash = $1
+		WHERE api_key = $1
 	`
 
 	var app models.App
 	var description sql.NullString
 
-	err := s.db.QueryRow(query, apiKeyHash).Scan(
+	err := s.db.QueryRow(query, apiKey).Scan(
 		&app.ID,
-		&app.AppIdentifier,
+		&app.APIKey,
 		&app.UserID,
 		&app.Name,
 		&description,
 		pq.Array(&app.AllowedOrigins),
 		&app.AllowedChains,
-		&app.APIKeyHash,
 		&app.RateLimit,
 		&app.CreatedAt,
 		&app.UpdatedAt,
