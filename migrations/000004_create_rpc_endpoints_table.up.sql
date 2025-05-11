@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS rpc_endpoints (
   id SERIAL PRIMARY KEY,
-  chain_id INTEGER NOT NULL REFERENCES chain_static(id) ON DELETE CASCADE,
+  chain_id INTEGER NOT NULL REFERENCES chain_static(chain_id) ON DELETE CASCADE,
   geozone VARCHAR(100),
   endpoint_url TEXT NOT NULL,
   provider VARCHAR(100),
