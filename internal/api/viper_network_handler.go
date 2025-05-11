@@ -46,15 +46,13 @@ func (h *ViperNetworkHandler) RegisterRoutes(router *gin.Engine) {
 // Authentication middleware for Viper Network requests
 func (h *ViperNetworkHandler) authenticate(c *gin.Context) {
 	// Get app identifier and API key from headers
-	appIdentifier := c.GetHeader("X-App-ID")
 	apiKey := c.GetHeader("X-API-Key")
 
-	if appIdentifier == "" || apiKey == "" {
+	if apiKey == "" {
 		// Try from query parameters
-		appIdentifier = c.Query("appId")
 		apiKey = c.Query("apiKey")
 
-		if appIdentifier == "" || apiKey == "" {
+		if apiKey == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Missing application credentials",
 			})
@@ -64,7 +62,7 @@ func (h *ViperNetworkHandler) authenticate(c *gin.Context) {
 	}
 
 	// Validate API key
-	valid, err := h.appsService.ValidateAPIKey(appIdentifier, apiKey)
+	valid, err := h.appsService.ValidateAPIKey(apiKey)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to validate API key: " + err.Error(),
@@ -81,8 +79,6 @@ func (h *ViperNetworkHandler) authenticate(c *gin.Context) {
 		return
 	}
 
-	// Store app identifier in context for later use if needed
-	c.Set("app_identifier", appIdentifier)
 	c.Next()
 }
 
