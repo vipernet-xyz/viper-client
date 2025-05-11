@@ -120,10 +120,6 @@ func main() {
 	authHandler := api.NewAuthHandler(database)
 	authHandler.RegisterRoutes(router)
 
-	// Initialize and register RPC handler
-	rpcHandler := api.NewRPCHandler(rpcDispatcher, appsService, database)
-	rpcHandler.RegisterRoutes(router)
-
 	// Initialize and register Viper Network handler
 	viperNetworkAPIHandler := api.NewViperNetworkHandler(viperNetworkHandler, appsService)
 	viperNetworkAPIHandler.RegisterRoutes(router)
