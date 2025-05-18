@@ -116,17 +116,14 @@ func main() {
 		})
 	})
 
-	// Initialize and register handlers
-	authHandler := api.NewAuthHandler(database)
-	authHandler.RegisterRoutes(router)
-
 	// Initialize and register Viper Network handler
 	viperNetworkAPIHandler := api.NewViperNetworkHandler(viperNetworkHandler, appsService)
 	viperNetworkAPIHandler.RegisterRoutes(router)
 
-	// Initialize and register Relay handler
-	// relayHandler := api.NewRelayHandler(endpointManager)
-	// relayHandler.RegisterRoutes(router)
+	// Initialize and register relay handler at root path
+	relayHandler := api.NewRelayHandler(relayService)
+	relayGroup := router.Group("/")
+	relayHandler.RegisterRoutes(relayGroup)
 
 	// API routes - protected by Auto Authentication middleware
 	apiGroup := router.Group("/api")
@@ -144,10 +141,6 @@ func main() {
 	chainsHandler := api.NewChainsHandler(chainsService)
 	chainsHandler.RegisterRoutes(apiGroup)
 
-	// Initialize and register relay handler
-	relayHandler := api.NewRelayHandler(relayService)
-	relayHandler.RegisterRoutes(apiGroup)
-
 	// Sample protected endpoint
 	// @Summary Get user profile
 	// @Description Retrieves the authenticated user's profile information
@@ -158,7 +151,7 @@ func main() {
 	// @Failure 401 {object} api.ErrorResponse "Unauthorized"
 	// @Security BearerAuth
 	// @Router /api/profile [get]
-	apiGroup.GET("/profile", func(c *gin.Context) {
+	router.GET("/api/profile", func(c *gin.Context) {
 		userID := c.GetString("user_id")
 		email := c.GetString("email")
 		name := c.GetString("name")
