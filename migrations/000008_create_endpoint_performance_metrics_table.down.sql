@@ -1,0 +1,3 @@
+DROP INDEX IF EXISTS idx_endpoint_performance_metrics_ping_timestamp;
+DROP INDEX IF EXISTS idx_endpoint_performance_metrics_rpc_endpoint_id;
+DROP TABLE IF EXISTS endpoint_performance_metrics;
