@@ -32,3 +32,12 @@ func New(databaseURL string) (*DB, error) {
 func (db *DB) Close() error {
 	return db.DB.Close()
 }
+
+// IsUniqueConstraintViolation checks if an error is a PostgreSQL unique constraint violation
+// for a specific constraint name.
+func IsUniqueConstraintViolation(err error, constraintName string) bool {
+	if pgErr, ok := err.(*pq.Error); ok {
+		return pgErr.Code == "23505" && pgErr.Constraint == constraintName // 23505 is unique_violation
+	}
+	return false
+}
