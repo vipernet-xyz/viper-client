@@ -15,6 +15,8 @@ import (
 	"github.com/illegalcall/viper-client/internal/middleware"
 	"github.com/illegalcall/viper-client/internal/relay"
 	"github.com/illegalcall/viper-client/internal/rpc"
+	"github.com/illegalcall/viper-client/internal/analytics"
+	"github.com/illegalcall/viper-client/internal/cron"
 	"github.com/illegalcall/viper-client/internal/stats"
 	"github.com/illegalcall/viper-client/internal/utils"
 	"go.uber.org/zap"
@@ -140,6 +142,26 @@ func main() {
 	// Initialize and register chains handler
 	chainsHandler := api.NewChainsHandler(chainsService)
 	chainsHandler.RegisterRoutes(apiGroup)
+
+	// Initialize new services
+	analyzerService := analytics.NewPerformanceAnalyzerService(database.DB) // Pass *sql.DB
+
+	// Cron Job Orchestrator
+	cronOrchestrator := cron.NewCronJobOrchestrator(config, database.DB) // Pass *sql.DB and full config
+
+	// Register new API Handlers
+	analyticsApiHandler := api.NewAnalyticsHandler(analyzerService)
+	analyticsApiHandler.RegisterRoutes(apiGroup) // Register under /api/analytics/*
+
+	healthApiHandler := api.NewHealthHandler()
+	healthApiHandler.RegisterRoutes(apiGroup) // Registers /api/healthz
+
+	// Start the cron orchestrator
+	if err := cronOrchestrator.Start(); err != nil {
+		logger.Fatal("Failed to start Cron Job Orchestrator", zap.Error(err))
+	}
+	// Ensure graceful shutdown for the orchestrator
+	defer cronOrchestrator.Stop()
 
 	// Sample protected endpoint
 	// @Summary Get user profile
