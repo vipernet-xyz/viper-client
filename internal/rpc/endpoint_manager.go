@@ -32,12 +32,16 @@ func NewDBEndpointManager(db *sql.DB) *DBEndpointManager {
 // @Router /internal/rpc/endpoints/{chainID} [get]
 func (em *DBEndpointManager) GetActiveEndpoints(chainID int) ([]models.RpcEndpoint, error) {
 	query := `
-		SELECT id, chain_id, endpoint_url, provider, is_active, priority, 
-		       health_check_timestamp, health_status, created_at, updated_at
+		SELECT id, chain_id, endpoint_url, provider, is_active, priority,
+		       health_check_timestamp, health_status, created_at, updated_at,
+		       public_key, response_time_ms, last_ping_timestamp, servicer_type
 		FROM rpc_endpoints
 		WHERE chain_id = $1 AND is_active = true AND geozone = 'IND'
 		ORDER BY priority DESC
 	`
+	// Note: The ORDER BY priority DESC might be overridden by the dispatcher's sort by ResponseTimeMs.
+	// Consider if this initial DB sort is still needed or if dispatcher handles all sorting.
+	// For now, keeping it as it doesn't harm.
 
 	rows, err := em.db.Query(query, chainID)
 	if err != nil {
@@ -51,6 +55,10 @@ func (em *DBEndpointManager) GetActiveEndpoints(chainID int) ([]models.RpcEndpoi
 		var healthCheckTime sql.NullTime
 		var healthStatus sql.NullString
 		var provider sql.NullString
+		var publicKey sql.NullString
+		var responseTimeMs sql.NullInt64 // Use NullInt64 for *int
+		var lastPingTimestamp sql.NullTime
+		var servicerType sql.NullString
 
 		err := rows.Scan(
 			&endpoint.ID,
@@ -63,6 +71,10 @@ func (em *DBEndpointManager) GetActiveEndpoints(chainID int) ([]models.RpcEndpoi
 			&healthStatus,
 			&endpoint.CreatedAt,
 			&endpoint.UpdatedAt,
+			&publicKey,
+			&responseTimeMs,
+			&lastPingTimestamp,
+			&servicerType,
 		)
 		if err != nil {
 			return nil, err
@@ -76,6 +88,19 @@ func (em *DBEndpointManager) GetActiveEndpoints(chainID int) ([]models.RpcEndpoi
 		}
 		if provider.Valid {
 			endpoint.Provider = provider.String
+		}
+		if publicKey.Valid {
+			endpoint.PublicKey = &publicKey.String
+		}
+		if responseTimeMs.Valid {
+			val := int(responseTimeMs.Int64)
+			endpoint.ResponseTimeMs = &val
+		}
+		if lastPingTimestamp.Valid {
+			endpoint.LastPingTimestamp = &lastPingTimestamp.Time
+		}
+		if servicerType.Valid {
+			endpoint.ServicerType = servicerType.String
 		}
 
 		endpoints = append(endpoints, endpoint)

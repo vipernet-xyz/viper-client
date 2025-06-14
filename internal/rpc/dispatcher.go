@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
+	"sync"
 	"time"
 
 	"github.com/illegalcall/viper-client/internal/models"
@@ -54,6 +56,8 @@ type Dispatcher struct {
 	endpointManager     EndpointManager
 	httpClient          *http.Client
 	viperNetworkHandler *ViperNetworkHandler
+	roundRobinIndex     map[int]int // chainID -> index
+	mu                  sync.Mutex  // for thread-safe access to roundRobinIndex
 }
 
 // EndpointManager defines the interface for retrieving and managing RPC endpoints
@@ -72,6 +76,7 @@ func NewDispatcher(manager EndpointManager) *Dispatcher {
 			Timeout: 10 * time.Second,
 		},
 		viperNetworkHandler: viperHandler,
+		roundRobinIndex:     make(map[int]int),
 	}
 }
 
@@ -89,18 +94,50 @@ func (d *Dispatcher) Forward(ctx context.Context, chainID int, requestBody []byt
 	}
 
 	// Get available endpoints for the chain
-	endpoints, err := d.endpointManager.GetActiveEndpoints(chainID)
+	allEndpoints, err := d.endpointManager.GetActiveEndpoints(chainID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get active endpoints: %w", err)
 	}
 
-	if len(endpoints) == 0 {
+	if len(allEndpoints) == 0 {
 		return nil, ErrNoEndpoints
 	}
 
-	// Sort endpoints by priority (assuming they are already sorted from the database)
-	// For now, just use the first endpoint
-	selectedEndpoint := endpoints[0]
+	// Filter out endpoints with nil ResponseTimeMs
+	activeEndpoints := make([]models.RpcEndpoint, 0, len(allEndpoints))
+	for _, ep := range allEndpoints {
+		if ep.ResponseTimeMs != nil {
+			activeEndpoints = append(activeEndpoints, ep)
+		}
+	}
+
+	if len(activeEndpoints) == 0 {
+		return nil, ErrNoEndpoints // All endpoints had nil ResponseTimeMs or no active endpoints initially
+	}
+
+	// Sort endpoints by ResponseTimeMs in ascending order
+	sort.SliceStable(activeEndpoints, func(i, j int) bool {
+		return *activeEndpoints[i].ResponseTimeMs < *activeEndpoints[j].ResponseTimeMs
+	})
+
+	// Implement round-robin from top N (N=3 for now)
+	const topN = 3
+	var candidateEndpoints []models.RpcEndpoint
+	if len(activeEndpoints) <= topN {
+		candidateEndpoints = activeEndpoints
+	} else {
+		candidateEndpoints = activeEndpoints[:topN]
+	}
+
+	if len(candidateEndpoints) == 0 { // Should not happen if activeEndpoints is not empty, but as a safeguard
+		return nil, ErrNoEndpoints
+	}
+
+	d.mu.Lock()
+	currentIndex := d.roundRobinIndex[chainID]
+	selectedEndpoint := candidateEndpoints[currentIndex%len(candidateEndpoints)]
+	d.roundRobinIndex[chainID] = (currentIndex + 1) % len(candidateEndpoints)
+	d.mu.Unlock()
 
 	// Forward the request to the selected endpoint
 	req, err := http.NewRequestWithContext(ctx, "POST", selectedEndpoint.EndpointURL, bytes.NewReader(requestBody))
