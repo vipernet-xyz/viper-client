@@ -49,7 +49,7 @@ func getEnvAsIntSlice(key string, defaultValue []int) []int {
 // MonitoringConfig holds configuration specific to the servicer monitoring system
 type MonitoringConfig struct {
 	// Cron job configuration
-	CronSchedule       string `env:"MONITORING_CRON_SCHEDULE" default:"*/5 * * * *"`
+	CronSchedule       string `env:"MONITORING_CRON_SCHEDULE" default:"0 */5 * * * *"`
 	SessionCount       int    `env:"MONITORING_SESSION_COUNT" default:"10"`
 	PingTimeout        string `env:"MONITORING_PING_TIMEOUT" default:"5s"` // Store as string, parse to time.Duration where needed
 	MaxConcurrentPings int    `env:"MONITORING_MAX_CONCURRENT_PINGS" default:"50"`
@@ -86,7 +86,7 @@ func LoadConfig() *Config {
 	dbURL := getEnv("DATABASE_URL", "postgres://postgres:password@localhost:5432/viperdb?sslmode=disable")
 
 	monitorCfg := MonitoringConfig{
-		CronSchedule:       getEnv("MONITORING_CRON_SCHEDULE", "*/5 * * * *"),
+		CronSchedule:       getEnv("MONITORING_CRON_SCHEDULE", "0 */5 * * * *"),
 		SessionCount:       getEnvAsInt("MONITORING_SESSION_COUNT", 10),
 		PingTimeout:        getEnv("MONITORING_PING_TIMEOUT", "5s"),
 		MaxConcurrentPings: getEnvAsInt("MONITORING_MAX_CONCURRENT_PINGS", 50),

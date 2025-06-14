@@ -78,9 +78,9 @@ func NewDispatcher(manager EndpointManager) *Dispatcher {
 // Forward forwards an RPC request to an available endpoint for the given chain
 func (d *Dispatcher) Forward(ctx context.Context, chainID int, requestBody []byte) ([]byte, error) {
 	// Check if this is a request for the Viper Network
-	if chainID == ViperNetworkChainID {
-		return d.ForwardToViperNetwork(ctx, requestBody)
-	}
+	// if chainID == ViperNetworkChainID {
+	// 	return d.ForwardToViperNetwork(ctx, requestBody)
+	// }
 
 	// Parse the incoming request to validate and potentially use for caching
 	var rpcRequest RPCRequest

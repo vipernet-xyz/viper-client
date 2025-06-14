@@ -68,4 +68,4 @@ func AutoAuthMiddleware(database DatabaseInterface) gin.HandlerFunc {
 		// Proceed to the next handler
 		c.Next()
 	}
-}
+}f

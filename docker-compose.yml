@@ -1,17 +1,4 @@
 services:
-  app:
-    build: .
-    ports:
-      - "8080:8080"
-    depends_on:
-      - db
-    environment:
-      - PORT=8080
-      - DATABASE_URL=postgres://postgres:password@db:5432/viperdb?sslmode=disable
-    volumes:
-      - .:/app
-      - ./migrations:/app/migrations
-
   db:
     image: postgres:14
     environment:
@@ -24,4 +11,4 @@ services:
       - pgdata:/var/lib/postgresql/data
 
 volumes:
-  pgdata: 
+  pgdata:

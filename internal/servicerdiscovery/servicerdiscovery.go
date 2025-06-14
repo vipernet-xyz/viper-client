@@ -7,10 +7,10 @@ import (
 	"log" // Or your preferred logging library if established
 	"time"
 
-	"github.com/illegalcall/viper-client/internal/db" // For direct DB interaction if needed, or pass *sql.DB
-	"github.com/illegalcall/viper-client/internal/models"
-	"github.com/illegalcall/viper-client/internal/relay" // Existing relay client
-	"github.com/illegalcall/viper-client/internal/utils" // For Config
+	"github.com/illegalcall/viper-client/internal/db"     // For direct DB interaction if needed, or pass *sql.DB
+	"github.com/illegalcall/viper-client/internal/models" // For Servicer type
+	"github.com/illegalcall/viper-client/internal/relay"  // Existing relay client
+	"github.com/illegalcall/viper-client/internal/utils"  // For Config
 )
 
 // ServicerDiscoveryService handles the discovery and registration of servicers.
@@ -58,8 +58,8 @@ func (s *ServicerDiscoveryService) DiscoverAndRegisterServicers(ctx context.Cont
 			PubKey:       s.config.AppClientPubKey,
 			Blockchain:   chainIDStr,
 			GeoZone:      s.config.GeozoneID,
-			NumServicers: s.config.ServicerCount,
-			Method:       "POST", 
+			NumServicers: int64(s.config.ServicerCount),
+			Method:       "POST",
 			Headers:      map[string]string{"Content-Type": "application/json"},
 		}
 
@@ -71,7 +71,7 @@ func (s *ServicerDiscoveryService) DiscoverAndRegisterServicers(ctx context.Cont
 		dispatchResp, err := relayClient.SyncedDispatch(ctx, opts)
 		if err != nil {
 			log.Printf("[ServicerDiscovery] Error dispatching session for Chain ID %s: %v", chainIDStr, err)
-			continue 
+			continue
 		}
 
 		if dispatchResp == nil || dispatchResp.Session == nil || len(dispatchResp.Session.Servicers) == 0 {
@@ -93,7 +93,7 @@ func (s *ServicerDiscoveryService) DiscoverAndRegisterServicers(ctx context.Cont
 	return nil
 }
 
-func (s *ServicerDiscoveryService) registerServicer(ctx context.Context, servicer *relay.Servicer, chainID int) {
+func (s *ServicerDiscoveryService) registerServicer(ctx context.Context, servicer models.Servicer, chainID int) {
 	var existingID int
 	query := `SELECT id FROM rpc_endpoints WHERE public_key = $1 AND servicer_type = 'discovered'`
 	err := s.db.QueryRowContext(ctx, query, servicer.PublicKey).Scan(&existingID)
@@ -127,12 +127,12 @@ func (s *ServicerDiscoveryService) registerServicer(ctx context.Context, service
 		chainID,
 		servicer.NodeURL,
 		servicer.PublicKey,
-		"discovered", 
-		true,         
+		"discovered",
+		true,
 		initialHealthStatus,
-		&now, 
-		now,          
-		now,          
+		&now,
+		now,
+		now,
 	).Scan(&newServicerID)
 
 	if err != nil {

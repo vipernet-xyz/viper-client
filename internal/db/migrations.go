@@ -116,3 +116,52 @@ func (db *DB) DropDB(migrationsPath string) error {
 	log.Println("Database dropped successfully")
 	return nil
 }
+
+// ForceVersion forces the migration version to fix dirty database state
+func (db *DB) ForceVersion(version int, migrationsPath string) error {
+	if migrationsPath == "" {
+		// Use the same logic as MigrateDB
+		wd, err := os.Getwd()
+		if err == nil {
+			if _, err := os.Stat(filepath.Join(wd, "migrations")); err == nil {
+				migrationsPath = "file://" + filepath.Join(wd, "migrations")
+			} else {
+				rootPath := wd
+				for i := 0; i < 3; i++ {
+					rootPath = filepath.Dir(rootPath)
+					if _, err := os.Stat(filepath.Join(rootPath, "migrations")); err == nil {
+						migrationsPath = "file://" + filepath.Join(rootPath, "migrations")
+						break
+					}
+				}
+
+				if migrationsPath == "" {
+					migrationsPath = "file://migrations"
+				}
+			}
+		} else {
+			migrationsPath = "file://migrations"
+		}
+	}
+
+	log.Printf("Using migrations path for force version: %s", migrationsPath)
+
+	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
+	if err != nil {
+		return fmt.Errorf("could not create the postgres driver: %w", err)
+	}
+
+	m, err := migrate.NewWithDatabaseInstance(
+		migrationsPath,
+		"postgres", driver)
+	if err != nil {
+		return fmt.Errorf("could not create the migration instance: %w", err)
+	}
+
+	if err := m.Force(version); err != nil {
+		return fmt.Errorf("failed to force version %d: %w", version, err)
+	}
+
+	log.Printf("Successfully forced migration version to %d", version)
+	return nil
+}
